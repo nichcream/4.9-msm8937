@@ -59,6 +59,7 @@ struct msm_iommu_pt {
  * asid: Unique asid assigned to each domain
  * attributes: Attributes associated with domains, like DYNAMIC attributes
  * base: If the domain is dynamic in nature, it must point to its base domain
+ * domain: iommu domain structure
  */
 struct msm_iommu_priv {
 	struct msm_iommu_pt pt;
@@ -68,6 +69,12 @@ struct msm_iommu_priv {
 	u32 asid;
 	u32 attributes;
 	struct iommu_domain *base;
+	struct iommu_domain domain;
 };
+
+static inline struct msm_iommu_priv *to_msm_iommu_priv(struct iommu_domain *dom)
+{
+	return container_of(dom, struct msm_iommu_priv, domain);
+}
 
 #endif

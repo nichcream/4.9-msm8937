@@ -971,7 +971,7 @@ static phys_addr_t get_phys_from_va(unsigned long va, u64 *table, int level)
 phys_addr_t msm_iommu_iova_to_phys_soft(struct iommu_domain *domain,
 							dma_addr_t va)
 {
-	struct msm_iommu_priv *priv = domain->priv;
+	struct msm_iommu_priv *priv = to_msm_iommu_priv(domain);
 	struct msm_iommu_pt *pt = &priv->pt;
 
 	return get_phys_from_va(va, pt->fl_table, 1);

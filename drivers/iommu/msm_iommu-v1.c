@@ -382,7 +382,7 @@ static void __sync_tlb(struct msm_iommu_drvdata *iommu_drvdata, int ctx,
 
 static int __flush_iotlb(struct iommu_domain *domain)
 {
-	struct msm_iommu_priv *priv = domain->priv;
+	struct msm_iommu_priv *priv = to_msm_iommu_priv(domain);
 	struct msm_iommu_priv *base_priv;
 	struct msm_iommu_drvdata *iommu_drvdata;
 	struct msm_iommu_ctx_drvdata *ctx_drvdata;
@@ -425,7 +425,7 @@ fail:
 
 static int __flush_iotlb_va(struct iommu_domain *domain, unsigned long va)
 {
-	struct msm_iommu_priv *priv = domain->priv;
+	struct msm_iommu_priv *priv = to_msm_iommu_priv(domain);
 	struct msm_iommu_priv *base_priv;
 	struct msm_iommu_drvdata *iommu_drvdata;
 	struct msm_iommu_ctx_drvdata *ctx_drvdata;
@@ -946,9 +946,12 @@ static void __program_context(struct msm_iommu_drvdata *iommu_drvdata,
 #define INITIAL_REDIRECT_VAL 0
 #endif
 
-static int msm_iommu_domain_init(struct iommu_domain *domain)
+static struct iommu_domain *msm_iommu_domain_alloc(unsigned type)
 {
 	struct msm_iommu_priv *priv;
+
+	if (type != IOMMU_DOMAIN_UNMANAGED)
+		return NULL;
 
 	priv = kzalloc(sizeof(*priv), GFP_KERNEL);
 	if (!priv)
@@ -960,26 +963,23 @@ static int msm_iommu_domain_init(struct iommu_domain *domain)
 	if (msm_iommu_pagetable_alloc(&priv->pt))
 		goto fail_nomem;
 
-	domain->priv = priv;
-	return 0;
+	return &priv->domain;
 
 fail_nomem:
 	kfree(priv);
-	return -ENOMEM;
+	return NULL;
 }
 
-static void msm_iommu_domain_destroy(struct iommu_domain *domain)
+static void msm_iommu_domain_free(struct iommu_domain *domain)
 {
 	struct msm_iommu_priv *priv;
 	unsigned long flags;
 
 	mutex_lock(&msm_iommu_lock);
 	spin_lock_irqsave(&msm_iommu_spin_lock, flags);
-	priv = domain->priv;
-	domain->priv = NULL;
+	priv = to_msm_iommu_priv(domain);
 
-	if (priv)
-		msm_iommu_pagetable_free(&priv->pt);
+	msm_iommu_pagetable_free(&priv->pt);
 
 	kfree(priv);
 	spin_unlock_irqrestore(&msm_iommu_spin_lock, flags);
@@ -993,7 +993,7 @@ static int msm_iommu_dynamic_attach(struct iommu_domain *domain,
 	int ret;
 	struct msm_iommu_priv *priv;
 
-	priv = domain->priv;
+	priv = to_msm_iommu_priv(domain);
 
 	/* Check if the domain is already attached or not */
 	if (priv->asid < MAX_ASID && priv->asid > 0)
@@ -1027,7 +1027,7 @@ static int msm_iommu_attach_dev(struct iommu_domain *domain, struct device *dev)
 
 	mutex_lock(&msm_iommu_lock);
 
-	priv = domain->priv;
+	priv = to_msm_iommu_priv(domain);
 	if (!priv || !dev) {
 		ret = -EINVAL;
 		goto unlock;
@@ -1145,7 +1145,7 @@ static void msm_iommu_dynamic_detach(struct iommu_domain *domain,
 	int ret;
 	struct msm_iommu_priv *priv;
 
-	priv = domain->priv;
+	priv = to_msm_iommu_priv(domain);
 	if (ctx_drvdata->attach_count > 0) {
 		ret = __enable_clocks(iommu_drvdata);
 		if (ret)
@@ -1181,7 +1181,7 @@ static void msm_iommu_detach_dev(struct iommu_domain *domain,
 	msm_iommu_detached(dev->parent);
 
 	mutex_lock(&msm_iommu_lock);
-	priv = domain->priv;
+	priv = to_msm_iommu_priv(domain);
 	if (!priv)
 		goto unlock;
 
@@ -1254,7 +1254,7 @@ static int msm_iommu_map(struct iommu_domain *domain, unsigned long va,
 	unsigned long flags;
 
 	spin_lock_irqsave(&msm_iommu_spin_lock, flags);
-	priv = domain->priv;
+	priv = to_msm_iommu_priv(domain);
 	if (!priv) {
 		ret = -EINVAL;
 		goto fail;
@@ -1278,7 +1278,7 @@ static size_t msm_iommu_unmap(struct iommu_domain *domain, unsigned long va,
 	unsigned long flags;
 
 	spin_lock_irqsave(&msm_iommu_spin_lock, flags);
-	priv = domain->priv;
+	priv = to_msm_iommu_priv(domain);
 	if (!priv)
 		goto fail;
 
@@ -1309,7 +1309,7 @@ static int msm_iommu_map_range(struct iommu_domain *domain, unsigned long va,
 	unsigned long flags;
 
 	spin_lock_irqsave(&msm_iommu_spin_lock, flags);
-	priv = domain->priv;
+	priv = to_msm_iommu_priv(domain);
 	if (!priv) {
 		ret = -EINVAL;
 		goto fail;
@@ -1331,7 +1331,7 @@ static int msm_iommu_unmap_range(struct iommu_domain *domain, unsigned long va,
 	unsigned long flags;
 
 	spin_lock_irqsave(&msm_iommu_spin_lock, flags);
-	priv = domain->priv;
+	priv = to_msm_iommu_priv(domain);
 	msm_iommu_pagetable_unmap_range(&priv->pt, va, len);
 
 	msm_iommu_flush_pagetable(&priv->pt, va, len);
@@ -1391,7 +1391,7 @@ static phys_addr_t msm_iommu_iova_to_phys_hard(struct iommu_domain *domain,
 
 	mutex_lock(&msm_iommu_lock);
 
-	priv = domain->priv;
+	priv = to_msm_iommu_priv(domain);
 	if (list_empty(&priv->list_attached))
 		goto fail;
 
@@ -1774,7 +1774,7 @@ static void __do_set_redirect(struct iommu_domain *domain, void *data)
 	int *no_redirect = data;
 
 	mutex_lock(&msm_iommu_lock);
-	priv = domain->priv;
+	priv = to_msm_iommu_priv(domain);
 	priv->pt.redirect = !(*no_redirect);
 	mutex_unlock(&msm_iommu_lock);
 }
@@ -1785,7 +1785,7 @@ static void __do_get_redirect(struct iommu_domain *domain, void *data)
 	int *no_redirect = data;
 
 	mutex_lock(&msm_iommu_lock);
-	priv = domain->priv;
+	priv = to_msm_iommu_priv(domain);
 	*no_redirect = !priv->pt.redirect;
 	mutex_unlock(&msm_iommu_lock);
 }
@@ -1804,7 +1804,7 @@ static void __do_get_redirect(struct iommu_domain *domain, void *data)
 static int msm_iommu_domain_set_attr(struct iommu_domain *domain,
 				enum iommu_attr attr, void *data)
 {
-	struct msm_iommu_priv *priv = domain->priv;
+	struct msm_iommu_priv *priv = to_msm_iommu_priv(domain);
 	struct msm_iommu_ctx_drvdata *ctx_drvdata = NULL;
 	int dynamic;
 
@@ -1849,7 +1849,7 @@ static int msm_iommu_domain_set_attr(struct iommu_domain *domain,
 static int msm_iommu_domain_get_attr(struct iommu_domain *domain,
 				enum iommu_attr attr, void *data)
 {
-	struct msm_iommu_priv *priv = domain->priv;
+	struct msm_iommu_priv *priv = to_msm_iommu_priv(domain);
 	struct msm_iommu_ctx_drvdata *ctx_drvdata = NULL;
 	u64 ttbr0;
 	u32 ctxidr;
@@ -1902,8 +1902,8 @@ static int msm_iommu_dma_supported(struct iommu_domain *domain,
 }
 
 static struct iommu_ops msm_iommu_ops = {
-	.domain_init = msm_iommu_domain_init,
-	.domain_destroy = msm_iommu_domain_destroy,
+	.domain_alloc = msm_iommu_domain_alloc,
+	.domain_free = msm_iommu_domain_free,
 	.attach_dev = msm_iommu_attach_dev,
 	.detach_dev = msm_iommu_detach_dev,
 	.map = msm_iommu_map,

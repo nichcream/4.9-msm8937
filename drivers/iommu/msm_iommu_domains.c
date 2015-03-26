@@ -47,7 +47,7 @@ static DEFINE_IDA(domain_nums);
 
 void msm_iommu_set_client_name(struct iommu_domain *domain, char const *name)
 {
-	struct msm_iommu_priv *priv = domain->priv;
+	struct msm_iommu_priv *priv = to_msm_iommu_priv(domain);
 
 	priv->client_name = name;
 }

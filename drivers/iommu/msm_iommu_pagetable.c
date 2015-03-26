@@ -635,7 +635,7 @@ void msm_iommu_flush_pagetable(struct msm_iommu_pt *pt, unsigned long va,
 phys_addr_t msm_iommu_iova_to_phys_soft(struct iommu_domain *domain,
 					  dma_addr_t va)
 {
-	struct msm_iommu_priv *priv = domain->priv;
+	struct msm_iommu_priv *priv = to_msm_iommu_priv(domain);
 	struct msm_iommu_pt *pt = &priv->pt;
 	u32 *fl_pte;
 	u32 fl_offset;

@@ -705,26 +705,28 @@ static int msm_iommu_sec_ptbl_unmap(struct msm_iommu_drvdata *iommu_drvdata,
 	return ret;
 }
 
-static int msm_iommu_domain_init(struct iommu_domain *domain)
+static struct iommu_domain *msm_iommu_domain_alloc(unsigned type)
 {
 	struct msm_iommu_priv *priv;
 
+	if (type != IOMMU_DOMAIN_UNMANAGED)
+		return NULL;
+
 	priv = kzalloc(sizeof(*priv), GFP_KERNEL);
 	if (!priv)
-		return -ENOMEM;
+		return NULL;
 
 	INIT_LIST_HEAD(&priv->list_attached);
-	domain->priv = priv;
-	return 0;
+
+	return &priv->domain;
 }
 
-static void msm_iommu_domain_destroy(struct iommu_domain *domain)
+static void msm_iommu_domain_free(struct iommu_domain *domain)
 {
 	struct msm_iommu_priv *priv;
 
 	iommu_access_ops->iommu_lock_acquire(0);
-	priv = domain->priv;
-	domain->priv = NULL;
+	priv = to_msm_iommu_priv(domain);
 
 	kfree(priv);
 	iommu_access_ops->iommu_lock_release(0);
@@ -740,7 +742,7 @@ static int msm_iommu_attach_dev(struct iommu_domain *domain, struct device *dev)
 
 	iommu_access_ops->iommu_lock_acquire(0);
 
-	priv = domain->priv;
+	priv = to_msm_iommu_priv(domain);
 	if (!priv || !dev) {
 		ret = -EINVAL;
 		goto fail;
@@ -838,7 +840,7 @@ static int get_drvdata(struct iommu_domain *domain,
 			struct msm_iommu_drvdata **iommu_drvdata,
 			struct msm_iommu_ctx_drvdata **ctx_drvdata)
 {
-	struct msm_iommu_priv *priv = domain->priv;
+	struct msm_iommu_priv *priv = to_msm_iommu_priv(domain);
 	struct msm_iommu_ctx_drvdata *ctx;
 
 	list_for_each_entry(ctx, &priv->list_attached, attached_elm) {
@@ -1038,7 +1040,7 @@ static int msm_iommu_domain_set_attr(struct iommu_domain *domain,
 static int msm_iommu_domain_get_attr(struct iommu_domain *domain,
 				enum iommu_attr attr, void *data)
 {
-	struct msm_iommu_priv *priv = domain->priv;
+	struct msm_iommu_priv *priv = to_msm_iommu_priv(domain);
 	struct msm_iommu_ctx_drvdata *ctx_drvdata;
 
 	switch (attr) {
@@ -1060,8 +1062,8 @@ static int msm_iommu_domain_get_attr(struct iommu_domain *domain,
 }
 
 static struct iommu_ops msm_iommu_ops = {
-	.domain_init = msm_iommu_domain_init,
-	.domain_destroy = msm_iommu_domain_destroy,
+	.domain_alloc = msm_iommu_domain_alloc,
+	.domain_free = msm_iommu_domain_free,
 	.attach_dev = msm_iommu_attach_dev,
 	.detach_dev = msm_iommu_detach_dev,
 	.map = msm_iommu_map,
