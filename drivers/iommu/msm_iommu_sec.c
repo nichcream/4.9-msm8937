@@ -705,20 +705,25 @@ static int msm_iommu_sec_ptbl_unmap(struct msm_iommu_drvdata *iommu_drvdata,
 	return ret;
 }
 
-static int msm_iommu_domain_init(struct iommu_domain *domain)
+static struct iommu_domain *msm_iommu_domain_alloc(unsigned type)
 {
 	struct msm_iommu_priv *priv;
+	struct iommu_domain *domain;
+
+	if (type != IOMMU_DOMAIN_UNMANAGED)
+		return NULL;
 
 	priv = kzalloc(sizeof(*priv), GFP_KERNEL);
-	if (!priv)
-		return -ENOMEM;
+	domain = kzalloc(sizeof(*domain), GFP_KERNEL);
+	if (!priv || !domain)
+		return NULL;
 
 	INIT_LIST_HEAD(&priv->list_attached);
 	domain->priv = priv;
-	return 0;
+	return domain;
 }
 
-static void msm_iommu_domain_destroy(struct iommu_domain *domain)
+static void msm_iommu_domain_free(struct iommu_domain *domain)
 {
 	struct msm_iommu_priv *priv;
 
@@ -727,6 +732,7 @@ static void msm_iommu_domain_destroy(struct iommu_domain *domain)
 	domain->priv = NULL;
 
 	kfree(priv);
+	kfree(domain);
 	iommu_access_ops->iommu_lock_release(0);
 }
 
@@ -1060,8 +1066,8 @@ static int msm_iommu_domain_get_attr(struct iommu_domain *domain,
 }
 
 static struct iommu_ops msm_iommu_ops = {
-	.domain_init = msm_iommu_domain_init,
-	.domain_destroy = msm_iommu_domain_destroy,
+	.domain_alloc = msm_iommu_domain_alloc,
+	.domain_free = msm_iommu_domain_free,
 	.attach_dev = msm_iommu_attach_dev,
 	.detach_dev = msm_iommu_detach_dev,
 	.map = msm_iommu_map,

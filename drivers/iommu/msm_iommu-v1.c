@@ -946,12 +946,17 @@ static void __program_context(struct msm_iommu_drvdata *iommu_drvdata,
 #define INITIAL_REDIRECT_VAL 0
 #endif
 
-static int msm_iommu_domain_init(struct iommu_domain *domain)
+static struct iommu_domain *msm_iommu_domain_alloc(unsigned type)
 {
 	struct msm_iommu_priv *priv;
+	struct iommu_domain *domain;
+
+	if (type != IOMMU_DOMAIN_UNMANAGED)
+		return NULL;
 
 	priv = kzalloc(sizeof(*priv), GFP_KERNEL);
-	if (!priv)
+	domain = kzalloc(sizeof(*domain), GFP_KERNEL);
+	if (!priv || !domain)
 		goto fail_nomem;
 
 	priv->pt.redirect = INITIAL_REDIRECT_VAL;
@@ -961,14 +966,15 @@ static int msm_iommu_domain_init(struct iommu_domain *domain)
 		goto fail_nomem;
 
 	domain->priv = priv;
-	return 0;
+	return domain;
 
 fail_nomem:
 	kfree(priv);
-	return -ENOMEM;
+	kfree(domain);
+	return NULL;
 }
 
-static void msm_iommu_domain_destroy(struct iommu_domain *domain)
+static void msm_iommu_domain_free(struct iommu_domain *domain)
 {
 	struct msm_iommu_priv *priv;
 	unsigned long flags;
@@ -982,6 +988,7 @@ static void msm_iommu_domain_destroy(struct iommu_domain *domain)
 		msm_iommu_pagetable_free(&priv->pt);
 
 	kfree(priv);
+	kfree(domain);
 	spin_unlock_irqrestore(&msm_iommu_spin_lock, flags);
 	mutex_unlock(&msm_iommu_lock);
 }
@@ -1902,8 +1909,8 @@ static int msm_iommu_dma_supported(struct iommu_domain *domain,
 }
 
 static struct iommu_ops msm_iommu_ops = {
-	.domain_init = msm_iommu_domain_init,
-	.domain_destroy = msm_iommu_domain_destroy,
+	.domain_alloc = msm_iommu_domain_alloc,
+	.domain_free = msm_iommu_domain_free,
 	.attach_dev = msm_iommu_attach_dev,
 	.detach_dev = msm_iommu_detach_dev,
 	.map = msm_iommu_map,
