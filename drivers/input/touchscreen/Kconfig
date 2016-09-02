@@ -1260,6 +1260,39 @@ config TOUCHSCREEN_FT5X06
 
 config TOUCHSCREEN_GEN_VKEYS
 	tristate "Touchscreen Virtual Keys Driver"
+        depends on I2C
+        help
+         Say Y here if you want to generate a sysfs entry for virtual
+         keys on Android.
+
+         If unsure, say N.
+
+         To compile this driver as a module, choose M here: the
+         module will be called gen_vkeys.
+
+
+config TOUCHSCREEN_FT5336
+       tristate "FocalTech touchscreens"
+       depends on I2C
+       help
+         Say Y here if you have a ft5336 touchscreen.
+	 Ft5336 controllers are multi touch controllers which can
+	 report 5 touches at a time.
+
+         If unsure, say N.
+
+config TOUCHSCREEN_IST30XX
+       tristate "FocalTech touchscreens"
+       depends on I2C
+       help
+         Say Y here if you have a ist30xx chip.
+	 report 5 touches at a time.
+
+         If unsure, say N.
+
+config TOUCHSCREEN_SYNAPTICS_I2C_RMI4
+	tristate "Synaptics DSX I2C touchscreen"
+	depends on I2C
 	help
          Say Y here if you want to generate a sysfs entry for virtual
 	 keys on Android.
