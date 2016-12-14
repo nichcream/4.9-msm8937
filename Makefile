@@ -827,6 +827,8 @@ else
 # Use make W=1 to enable them (see scripts/Makefile.extrawarn)
 KBUILD_CFLAGS += $(call cc-disable-warning, unused-but-set-variable)
 endif
+# transport MTK_CDEFS ( mtk compile macros ) to .c for compile
+KBUILD_CFLAGS += $(MTK_CDEFS)
 
 KBUILD_CFLAGS += $(call cc-disable-warning, unused-const-variable)
 ifdef CONFIG_FRAME_POINTER
