@@ -925,6 +925,22 @@ config MSM_BAM_DMUX
 
 source "drivers/soc/qcom/wcnss/Kconfig"
 
+config CPUMAXFREQ
+	bool "Enable CPUMAXFREQ Proc Interface"
+	help
+	Provide a interface for getting the maximum frequency supported by cpu core
+
+config SERIAL_NUM
+	bool "Enable Serial Number Proc Interface"
+	help
+	Provide a interface for reading CPU serial number
+
+config SECBOOT_FUSE
+	bool "Enable Secure boot fuse Proc Interface"
+	help
+	   Provide a interface for reading CPU secure boot fuse setting. Interface located in
+	   /proc/secboot_fuse_reg
+
 config BIG_CLUSTER_MIN_FREQ_ADJUST
 	bool "Adjust BIG cluster min frequency based on power collapse state"
 	default n
