@@ -9,6 +9,11 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  */
+#ifdef CONFIG_MACH_XIAOMI_MSM8937
+#ifdef CONFIG_MACH_XIAOMI_LAND
+#include "msmb_isp-land.h"
+#endif /* CONFIG_MACH_XIAOMI_LAND */
+#else
 #ifndef __MSMB_ISP__
 #define __MSMB_ISP__
 
@@ -51,4 +56,4 @@ struct avtimer_fptr_t {
 void msm_isp_set_avtimer_fptr(struct avtimer_fptr_t avtimer_func);
 #endif
 #endif
-
+#endif /* CONFIG_MACH_XIAOMI_MSM8937 */
