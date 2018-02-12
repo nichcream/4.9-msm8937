@@ -44,6 +44,7 @@
 &usb_otg {
 	qcom,hsusb-otg-phy-init-seq =
 		<0x39 0x81 0x37 0x82 0xffffffff>;
+	extcon = <&qpnp_smbcharger>;
 };
 
 &qpnp_fg {
