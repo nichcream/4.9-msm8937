@@ -71,6 +71,7 @@
 
 &usb_otg {
 	qcom,usbin-vadc = <&pmi8950_vadc>;
+	extcon = <&qpnp_smbcharger>;
 };
 &soc {
 	sound {
