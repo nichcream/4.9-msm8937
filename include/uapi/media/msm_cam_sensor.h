@@ -1,5 +1,10 @@
+#ifdef CONFIG_MACH_XIAOMI_MSM8937
 #ifdef CONFIG_MACH_XIAOMI_LAND
 #include "msm_cam_sensor-land.h"
+#endif
+#ifdef CONFIG_MACH_XIAOMI_SANTONI
+#include "msm_cam_sensor-santoni.h"
+#endif
 #else
 #ifndef __UAPI_LINUX_MSM_CAM_SENSOR_H
 #define __UAPI_LINUX_MSM_CAM_SENSOR_H

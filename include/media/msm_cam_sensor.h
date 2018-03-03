@@ -1,5 +1,10 @@
+#ifdef CONFIG_MACH_XIAOMI_MSM8937
 #ifdef CONFIG_MACH_XIAOMI_LAND
 #include "msm_cam_sensor-land.h"
+#endif
+#ifdef CONFIG_MACH_XIAOMI_SANTONI
+#include "msm_cam_sensor-santoni.h"
+#endif
 #else
 #ifndef __LINUX_MSM_CAM_SENSOR_H
 #define __LINUX_MSM_CAM_SENSOR_H
@@ -59,7 +64,9 @@ struct msm_camera_sensor_slave_info32 {
 	uint8_t  is_init_params_valid;
 	struct msm_sensor_init_params sensor_init_params;
 	enum msm_sensor_output_format_t output_format;
+#ifndef CONFIG_MACH_XIAOMI_SANTONI
 	uint8_t bypass_video_node_creation;
+#endif
 };
 
 struct msm_camera_csid_lut_params32 {
