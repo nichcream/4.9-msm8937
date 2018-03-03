@@ -1,5 +1,7 @@
-#ifdef CONFIG_MACH_XIAOMI_LAND
+#if defined (CONFIG_MACH_XIAOMI_LAND)
 #include "msmb_isp-land.h"
+#elif defined (CONFIG_MACH_XIAOMI_SANTONI)
+#include "msmb_isp-santoni.h"
 #else
 #ifndef __UAPI_MSMB_ISP__
 #define __UAPI_MSMB_ISP__
@@ -1117,5 +1119,5 @@ enum msm_isp_ioctl_cmd_code {
 	struct msm_vfe_dual_lpm_mode)
 
 #endif /* __MSMB_ISP__ */
-#endif /* CONFIG_MACH_XIAOMI_LAND */
+#endif /* CONFIG_MACH_XIAOMI_xx */
 
