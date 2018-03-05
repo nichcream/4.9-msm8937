@@ -19,7 +19,6 @@
 #include <linux/io.h>
 #include <linux/list.h>
 #include <linux/delay.h>
-#include <linux/avtimer_kernel.h>
 #include <media/v4l2-subdev.h>
 #include <media/msmb_isp.h>
 #include <linux/msm-bus.h>
@@ -727,7 +726,6 @@ struct vfe_parent_device {
 	struct platform_device *child_list[VFE_SD_HW_MAX];
 	struct msm_vfe_common_subdev *common_sd;
 };
-
 int vfe_hw_probe(struct platform_device *pdev);
 
 #endif
