@@ -357,6 +357,7 @@ dtbo-$(CONFIG_ARCH_MSM8953) += msm8953-mtp-overlay.dtbo \
 	msm8953-ext-codec-rcm-overlay.dtbo \
 	msm8953-cdp-1200p-overlay.dtbo
 
+
 dtbo-$(CONFIG_ARCH_SDM450) += msm8953-mtp-overlay.dtbo \
 	msm8953-cdp-overlay.dtbo \
 	msm8953-rcm-overlay.dtbo \
@@ -521,12 +522,16 @@ dtb-$(CONFIG_ARCH_MSM8953) += msm8953-cdp.dtb \
 	msm8953-pmi8937-ext-codec-mtp.dtb \
 	msm8953-pmi632-cdp-s2.dtb
 
+ifeq ($(CONFIG_MACH_XIAOMI_MSM8937),y)
+dtb-$(CONFIG_MACH_XIAOMI_LAND) += msm8937-pmi8950-qrd-sku1.dtb
+else
 dtb-$(CONFIG_ARCH_MSM8937) += msm8937-pmi8950-mtp.dtb \
 	msm8937-interposer-sdm439-cdp.dtb \
 	msm8937-interposer-sdm439-mtp.dtb \
 	msm8937-interposer-sdm439-qrd.dtb \
 	msm8937-interposer-sdm429-cdp.dtb \
 	msm8937-interposer-sdm429-mtp.dtb
+endif
 
 dtb-$(CONFIG_ARCH_MSM8940) += msm8940-pmi8937-mtp.dtb \
 	msm8940-pmi8950-mtp.dtb \
