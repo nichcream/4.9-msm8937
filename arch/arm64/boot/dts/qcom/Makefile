@@ -520,6 +520,9 @@ sdm429-spyro-qrd-evt-overlay.dtbo-base := sdm429-spyro.dtb
 sdm429-spyro-qrd-dvt-overlay.dtbo-base := sdm429-spyro-dvt.dtb
 sdm429-spyro-qrd-wdp-overlay.dtbo-base := sdm429-spyro-wdp.dtb
 else
+ifeq ($(CONFIG_MACH_XIAOMI_MSM8937),y)
+dtb-$(CONFIG_MACH_XIAOMI_LAND) += msm8937-pmi8950-qrd-sku1.dtb
+else
 dtb-$(CONFIG_ARCH_MSM8953) += msm8953-cdp.dtb \
 	msm8953-mtp.dtb \
 	msm8953-ext-codec-mtp.dtb \
@@ -656,6 +659,7 @@ dtb-$(CONFIG_ARCH_SDM429) += sdm429-mtp.dtb \
 	sdm429-spyro-dvt.dtb \
 	sdm429-spyro-wdp.dtb
 
+endif
 endif
 
 dtb-$(CONFIG_ARCH_SDM845_VM) += sdm845-vm.dtb
