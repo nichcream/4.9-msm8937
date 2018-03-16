@@ -35,6 +35,8 @@
 
 #define VSYNC_DELAY msecs_to_jiffies(17)
 
+extern bool is_Lcm_Present;
+
 DEFINE_LED_TRIGGER(bl_led_trigger);
 
 void mdss_dsi_panel_pwm_cfg(struct mdss_dsi_ctrl_pdata *ctrl)
@@ -917,8 +919,22 @@ static int mdss_dsi_panel_on(struct mdss_panel_data *pdata)
 	pr_debug("%s: ndx=%d cmd_cnt=%d\n", __func__,
 				ctrl->ndx, on_cmds->cmd_cnt);
 
+	if (ctrl->init_last) {
+		if (ctrl->gamma_cmds.cmd_cnt)
+			mdss_dsi_panel_cmds_send(ctrl, &ctrl->gamma_cmds, CMD_REQ_COMMIT);
+		if (ctrl->ce_cmds.cmd_cnt)
+			mdss_dsi_panel_cmds_send(ctrl, &ctrl->ce_cmds, CMD_REQ_COMMIT);
+	}
+
 	if (on_cmds->cmd_cnt)
 		mdss_dsi_panel_cmds_send(ctrl, on_cmds, CMD_REQ_COMMIT);
+
+	if (!ctrl->init_last) {
+		if (ctrl->gamma_cmds.cmd_cnt)
+			mdss_dsi_panel_cmds_send(ctrl, &ctrl->gamma_cmds, CMD_REQ_COMMIT);
+		if (ctrl->ce_cmds.cmd_cnt)
+			mdss_dsi_panel_cmds_send(ctrl, &ctrl->ce_cmds, CMD_REQ_COMMIT);
+	}
 
 	if (pinfo->compression_mode == COMPRESSION_DSC)
 		mdss_dsi_panel_dsc_pps_send(ctrl, pinfo);
@@ -1064,6 +1080,7 @@ static int mdss_dsi_panel_low_power_config(struct mdss_panel_data *pdata,
 	return 0;
 }
 
+<<<<<<< 6f48d563e06aca4de27a34b405aa2d25e3876fa4
 static void mdss_dsi_parse_mdp_kickoff_threshold(struct device_node *np,
 	struct mdss_panel_info *pinfo)
 {
@@ -1104,6 +1121,52 @@ static void mdss_dsi_parse_mdp_kickoff_threshold(struct device_node *np,
 		pinfo->mdp_koff_delay,
 		max_delay_us,
 		pinfo->mdp_koff_thshold);
+}
+
+int mdss_dsi_panel_gamma(struct mdss_panel_data *pdata)
+{
+	struct mipi_panel_info *mipi;
+	struct mdss_dsi_ctrl_pdata *ctrl = NULL;
+
+	if (pdata == NULL) {
+		pr_err("%s: Invalid input data\n", __func__);
+		return -EINVAL;
+	}
+
+	ctrl = container_of(pdata, struct mdss_dsi_ctrl_pdata,
+				panel_data);
+	mipi  = &pdata->panel_info.mipi;
+
+	pr_debug("%s: ctrl=%p ndx=%d\n", __func__, ctrl, ctrl->ndx);
+
+	if (ctrl->gamma_cmds.cmd_cnt)
+		mdss_dsi_panel_cmds_send(ctrl, &ctrl->gamma_cmds, CMD_REQ_COMMIT);
+
+	pr_debug("%s:-\n", __func__);
+	return 0;
+}
+
+int mdss_dsi_panel_ce(struct mdss_panel_data *pdata)
+{
+	struct mipi_panel_info *mipi;
+	struct mdss_dsi_ctrl_pdata *ctrl = NULL;
+
+	if (pdata == NULL) {
+		pr_err("%s: Invalid input data\n", __func__);
+		return -EINVAL;
+	}
+
+	ctrl = container_of(pdata, struct mdss_dsi_ctrl_pdata,
+				panel_data);
+	mipi  = &pdata->panel_info.mipi;
+
+	pr_debug("%s: ctrl=%p ndx=%d\n", __func__, ctrl, ctrl->ndx);
+
+	if (ctrl->ce_cmds.cmd_cnt)
+		mdss_dsi_panel_cmds_send(ctrl, &ctrl->ce_cmds, CMD_REQ_COMMIT);
+
+	pr_debug("%s:-\n", __func__);
+	return 0;
 }
 
 static void mdss_dsi_parse_trigger(struct device_node *np, char *trigger,
@@ -2920,6 +2983,24 @@ static int mdss_panel_parse_dt(struct device_node *np,
 	rc = of_property_read_u32(np, "qcom,mdss-dsi-idle-fps", &tmp);
 	pinfo->mipi.frame_rate_idle = (!rc ? tmp : 60);
 
+	mdss_dsi_parse_dcs_cmds(np, &ctrl_pdata->warm_cmds,
+		"qcom,mdss-dsi-panel-warm-command", "qcom,mdss-dsi-panel-gamma-command-state");
+
+	mdss_dsi_parse_dcs_cmds(np, &ctrl_pdata->cool_cmds,
+		"qcom,mdss-dsi-panel-cool-command", "qcom,mdss-dsi-panel-gamma-command-state");
+
+	mdss_dsi_parse_dcs_cmds(np, &ctrl_pdata->nature_cmds,
+		"qcom,mdss-dsi-panel-nature-command", "qcom,mdss-dsi-panel-gamma-command-state");
+
+	mdss_dsi_parse_dcs_cmds(np, &ctrl_pdata->standard_cmds,
+		"qcom,mdss-dsi-panel-ce-std-command", "qcom,mdss-dsi-panel-ce-command-state");
+
+	mdss_dsi_parse_dcs_cmds(np, &ctrl_pdata->vivid_cmds,
+		"qcom,mdss-dsi-panel-ce-vivid-command", "qcom,mdss-dsi-panel-ce-command-state");
+
+	mdss_dsi_parse_dcs_cmds(np, &ctrl_pdata->bright_cmds,
+		"qcom,mdss-dsi-panel-ce-bright-command", "qcom,mdss-dsi-panel-ce-command-state");
+
 	rc = of_property_read_u32(np, "qcom,adjust-timer-wakeup-ms", &tmp);
 	pinfo->adjust_timer_delay_ms = (!rc ? tmp : 0);
 
@@ -2989,6 +3070,8 @@ int mdss_dsi_panel_init(struct device_node *node,
 	ctrl_pdata->panel_data.set_backlight = mdss_dsi_panel_bl_ctrl;
 	ctrl_pdata->panel_data.apply_display_setting =
 			mdss_dsi_panel_apply_display_setting;
+	if (is_Lcm_Present)
+		ctrl_pdata->panel_data.set_backlight = mdss_dsi_panel_bl_ctrl;
 	ctrl_pdata->switch_mode = mdss_dsi_panel_switch_mode;
 	ctrl_pdata->panel_data.get_idle = mdss_dsi_panel_get_idle_mode;
 	return 0;
