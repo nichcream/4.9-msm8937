@@ -88,6 +88,15 @@ obj-$(CONFIG_MSM_BGRSB) += bg_rsb.o
 obj-$(CONFIG_MSM_BGCOM_INTERFACE) += bgcom_interface.o
 obj-$(CONFIG_MSM_JTAGV8) += jtagv8.o jtagv8-etm.o
 obj-$(CONFIG_QCOM_COMMAND_DB) += cmd-db.o
+obj-$(CONFIG_SERIAL_NUM) += serial_num.o
+
+obj-$(CONFIG_MSM_SERVICE_NOTIFIER) += service-notifier.o
+obj-$(CONFIG_MSM_SYSMON_COMM) += sysmon.o sysmon-qmi.o
+obj-$(CONFIG_MSM_SECURE_BUFFER) += secure_buffer.o
+obj-$(CONFIG_TRACER_PKT) += tracer_pkt.o
+obj-$(CONFIG_ICNSS) += icnss.o wlan_firmware_service_v01.o
+obj-$(CONFIG_MSM_BAM_DMUX) += bam_dmux.o
+obj-$(CONFIG_MSM_SERVICE_LOCATOR) += service-locator.o
 obj-$(CONFIG_MSM_QBT1000) += qbt1000.o
 obj-$(CONFIG_MSM_EVENT_TIMER) += event_timer.o
 obj-$(CONFIG_MSM_IDLE_STATS)	+= lpm-stats.o
