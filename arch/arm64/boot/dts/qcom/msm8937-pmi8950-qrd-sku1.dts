@@ -37,6 +37,7 @@
 	qcom,battery-data = <&qrd_batterydata>;
 	qcom,float-voltage-mv = <4400>;
 	qcom,thermal-mitigation = <2000 1500 1200 800 800>;
+	dpdm-supply = <&usb_otg>;
 	status = "okay";
 };
 
