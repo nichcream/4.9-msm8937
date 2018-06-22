@@ -41,6 +41,7 @@
 	qcom,float-voltage-mv = <4400>;
 	qcom,chg-inhibit-fg;
 	qcom,thermal-mitigation = <2000 1500 1200 700 0>;
+	dpdm-supply = <&usb_otg>;
 	status = "okay";
 	qcom,vchg_sns-vadc = <&pmi8950_vadc>;
 	qcom,vchg-adc-channel-id = <3>;
