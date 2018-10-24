@@ -1276,7 +1276,7 @@ static void qpnp_flash_led_work(struct work_struct *work)
 
 	mutex_lock(&led->flash_led_lock);
 
-        dev_dbg(&led->spmi_dev->dev, "wt flash_node.cdev.name=%s\n",
+        dev_dbg(&led->pdev->dev, "wt flash_node.cdev.name=%s\n",
                 flash_node->cdev.name);
 
 	if (!brightness)

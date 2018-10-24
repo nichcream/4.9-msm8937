@@ -24,6 +24,8 @@
 #include <linux/pinctrl/consumer.h>
 #include <linux/err.h>
 #include <linux/delay.h>
+#include <linux/regulator/consumer.h>
+
 #define DUTY_CLCLE 50
 #define ADJUST_NUM 15
 #define JUSTTIMES 6
@@ -83,7 +85,6 @@ static void gpio_led_set(struct led_classdev *led_cdev,
 	} else {
 		if (led_dat->can_sleep)
 			gpiod_set_value_cansleep(led_dat->gpiod, level);
-		printk("infr has been end");
 		else
 			gpiod_set_value(led_dat->gpiod, level);
 	}
@@ -261,7 +262,7 @@ static ssize_t transmit_show(struct device *dev,
 	period = NSEC_PER_MSEC / carrier;
  	gpkt.pulse = period * DUTY_CLCLE / 100;
 	gpkt.space = period - gpkt.pulse;
- 	gpkt.gpio_nr = led_dat->gpio;
+ 	gpkt.gpio_nr = led_dat->gpiod;
 	gpkt.high_active = 1 /*gdata->tx_high_active */ ;
 	gpkt.buffer = (unsigned int *)&temp_buf[1];
 	gpkt.length = ((int)count / 4 - 1);
@@ -420,9 +421,8 @@ static struct gpio_leds_priv *gpio_leds_create(struct platform_device *pdev)
 				led.default_state = LEDS_GPIO_DEFSTATE_OFF;
 		}
 
-		led.retain_state_suspended =
-		    (unsigned)of_property_read_bool(child,
-						    "retain-state-suspended");
+		if (fwnode_property_present(child, "retain-state-suspended"))
+			led.retain_state_suspended = 1;
 		if (fwnode_property_present(child, "panic-indicator"))
 			led.panic_indicator = 1;
 
