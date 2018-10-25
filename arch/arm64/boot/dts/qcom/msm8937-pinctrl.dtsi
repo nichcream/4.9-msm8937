@@ -156,13 +156,15 @@
 				};
 			};
 		};
-
-		pmx_rd_nfc_int {
-			/*qcom,pins = <&gp 17>;*/
-			pins = "gpio17";
-			qcom,pin-func = <0>;
-			qcom,num-grp-pins = <1>;
-			label = "pmx_nfc_int";
+		
+		nfc {
+			nfc_int_active: nfc_int_active {
+				/* active state */
+				mux {
+					/* GPIO 17 NFC Read Interrupt */
+					pins = "gpio17";
+					function = "gpio";
+				};
 
 				config {
 					pins = "gpio17";
@@ -344,8 +346,7 @@
 				bias-disable = <0>;
 			};
 		};
-
-		fpc_reset_reset: fpc_reset_reset{
+ 		fpc_reset_reset: fpc_reset_reset{
 			mux {
 				pins = "gpio8";
 				function = "gpio";
@@ -357,8 +358,7 @@
 				output-low;
 			};
 		};
-
-		fpc_reset_active: fpc_reset_active{
+ 		fpc_reset_active: fpc_reset_active{
 			mux {
 				pins = "gpio8";
 				function = "gpio";
@@ -370,8 +370,7 @@
 				output-high;
 			};
 		};
-
-		fpc_irq_active: fpc_irq_active {
+ 		fpc_irq_active: fpc_irq_active {
 			mux {
 				pins = "gpio9";
 				function = "gpio";
@@ -383,8 +382,7 @@
 				input-enable;
 			};
 		};
-
-		goodix_spi_active: goodix_spi_active{
+ 		goodix_spi_active: goodix_spi_active{
 			mux {
 				pins = "gpio20", "gpio21", "gpio22", "gpio23";
 				function = "blsp_spi6";
@@ -395,8 +393,7 @@
 				bias-disable = <0>;
 			};
 		};
-
-		goodix_reset_reset: goodix_reset_reset{
+ 		goodix_reset_reset: goodix_reset_reset{
 			mux {
 				pins = "gpio8";
 				function = "gpio";
@@ -408,8 +405,7 @@
 				output-low;
 			};
 		};
-
-		goodix_reset_active: goodix_reset_active{
+ 		goodix_reset_active: goodix_reset_active{
 			mux {
 				pins = "gpio8";
 				function = "gpio";
@@ -421,8 +417,7 @@
 				output-high;
 			};
 		};
-
-		goodix_irq_active: goodix_irq_active {
+ 		goodix_irq_active: goodix_irq_active {
 			mux {
 				pins = "gpio9";
 				function = "gpio";
@@ -432,6 +427,88 @@
 				drive-strength = <2>;
 				bias-disable = <0>;
 				input-enable;
+			};
+		};
+
+		spi7 {
+			spi7_default: spi7_default {
+				mux {
+					pins = "gpio85", "gpio86", "gpio88";
+					function = "blsp_spi7";
+				};
+
+				config {
+					pins = "gpio85", "gpio86", "gpio88";
+					drive-strength = <16>;
+					bias-disable = <0>;
+				};
+			};
+
+			spi7_sleep: spi7_sleep {
+				mux {
+					pins = "gpio85", "gpio86", "gpio88";
+					function = "blsp_spi7";
+				};
+
+				config {
+					pins = "gpio85", "gpio86", "gpio88";
+					drive-strength = <16>;
+					bias-disable = <0>;
+				};
+			};
+			spi7_cs0_active: cs0_active {
+				mux {
+					pins = "gpio87";
+					function = "blsp_spi7_cs0";
+				};
+
+				config {
+					pins = "gpio87";
+					drive-strength = <2>;
+					bias-disable = <0>;
+				};
+			};
+		};
+
+		fpc_reset_int {
+			fpc_reset_low: reset_low {
+				mux {
+					pins = "gpio124";
+					function = "fpc_reset_gpio_low";
+				};
+
+				config {
+					pins = "gpio124";
+					drive-strength = <2>;
+					bias-disable;
+					output-low;
+				};
+			};
+
+			fpc_reset_high: reset_high {
+				mux {
+					pins = "gpio124";
+					function = "fpc_reset_gpio_high";
+				};
+
+				config {
+					pins = "gpio124";
+					drive-strength = <2>;
+					bias-disable;
+					output-high;
+				};
+			};
+
+			fpc_int_low: int_low {
+				mux {
+					pins = "gpio48";
+				};
+				config {
+					pins = "gpio48";
+					drive-strength = <2>;
+					bias-pull-down;
+					input-enable;
+				};
 			};
 		};
 
