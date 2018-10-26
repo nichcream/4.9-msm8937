@@ -25,7 +25,7 @@ static void power_supply_update_bat_leds(struct power_supply *psy)
 	if (power_supply_get_property(psy, POWER_SUPPLY_PROP_STATUS, &status))
 		return;
 
-	if (psy->get_property(psy, POWER_SUPPLY_PROP_CAPACITY, &bat_percent))
+	if (psy->desc->get_property(psy, POWER_SUPPLY_PROP_CAPACITY, &bat_percent))
 		return;
 
 	switch (status.intval) {
@@ -63,15 +63,15 @@ static int power_supply_create_bat_triggers(struct power_supply *psy)
 {
 	int rc = 0;
  	psy->charging_red_trig_name = kasprintf(GFP_KERNEL,
-					"%s-red", psy->name);
+					"%s-red", psy->desc->name);
 	if (!psy->charging_red_trig_name)
 		goto charging_red_failed;
 	psy->charging_green_trig_name = kasprintf(GFP_KERNEL,
-					"%s-green", psy->name);
+					"%s-green", psy->desc->name);
 	if (!psy->charging_green_trig_name)
 		goto charging_green_failed;
 	psy->charging_blue_trig_name = kasprintf(GFP_KERNEL,
-					"%s-blue", psy->name);
+					"%s-blue", psy->desc->name);
 	if (!psy->charging_blue_trig_name)
 		goto charging_blue_failed;
 	led_trigger_register_simple(psy->charging_red_trig_name,

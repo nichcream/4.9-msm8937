@@ -13,6 +13,7 @@
 #include <linux/io.h>
 #include <media/v4l2-subdev.h>
 #include <linux/ratelimit.h>
+#include <media/msmb_isp.h>
 
 #include "msm.h"
 #include "msm_isp_util.h"
@@ -20,6 +21,11 @@
 #include "msm_isp_stats_util.h"
 #include "msm_camera_io_util.h"
 #include "cam_smmu_api.h"
+#include "msm_camera_io_util.h"
+#include "msm_isp48.h"
+#define CREATE_TRACE_POINTS
+#include "trace/events/msm_cam.h"
+
 
 #define MAX_ISP_V4l2_EVENTS 100
 static DEFINE_MUTEX(bandwidth_mgr_mutex);
@@ -2200,7 +2206,7 @@ int msm_isp_open_node(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh)
 #ifdef CONFIG_MSM_AVTIMER
 void msm_isp_end_avtimer(void)
 {
-	avcs_core_disable_power_collapse(0);
+	msm_isp_stop_avtimer();
 }
 #else
 void msm_isp_end_avtimer(void)
