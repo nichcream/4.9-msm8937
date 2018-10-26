@@ -68,11 +68,11 @@
 };
 
 
-&pm8937_cajon_dig {
+&pmic_analog_codec {
 	status = "okay";
 };
 
-&pm8937_cajon_analog {
+&msm_digital_codec {
 	status = "okay";
 };
 
