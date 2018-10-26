@@ -14,6 +14,7 @@
 #include <linux/string.h>
 #include <linux/firmware.h>
 #include <linux/io.h>
+#include <linux/mailbox_client.h>
 #include <linux/elf.h>
 #include <linux/mutex.h>
 #include <linux/memblock.h>

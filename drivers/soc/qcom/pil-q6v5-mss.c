@@ -25,6 +25,7 @@
 #include <linux/of.h>
 #include <linux/regulator/consumer.h>
 #include <linux/interrupt.h>
+#include <linux/mailbox_client.h>
 #include <linux/dma-mapping.h>
 #include <linux/of_gpio.h>
 #include <soc/qcom/subsystem_restart.h>
