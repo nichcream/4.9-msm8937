@@ -72,11 +72,11 @@ static int32_t msm_buf_mngr_get_buf(struct msm_buf_mngr_device *dev,
 	}
 	new_entry->session_id = buf_info->session_id;
 	new_entry->stream_id = buf_info->stream_id;
-	new_entry->index = new_entry->vb2_buf->v4l2_buf.index;
+	new_entry->index = new_entry->vb2_buf->v4l2_buffer.index;
 	spin_lock_irqsave(&dev->buf_q_spinlock, flags);
 	list_add_tail(&new_entry->entry, &dev->buf_qhead);
 	spin_unlock_irqrestore(&dev->buf_q_spinlock, flags);
-	buf_info->index = new_entry->vb2_buf->v4l2_buf.index;
+	buf_info->index = new_entry->vb2_buf->v4l2_buffer.index;
 	if (buf_info->type == MSM_CAMERA_BUF_MNGR_BUF_USER) {
 		mutex_lock(&dev->cont_mutex);
 		if (!list_empty(&dev->cont_qhead)) {
@@ -164,7 +164,7 @@ static int32_t msm_generic_buf_mngr_flush(
 						buf_info->session_id,
 						buf_info->stream_id, 0, &ts, 0);
 			pr_err("Bufs not flushed: str_id = %d buf_index = %d ret = %d\n",
-			buf_info->stream_id, bufs->vb2_buf->v4l2_buf.index,
+			buf_info->stream_id, bufs->vb2_buf->v4l2_buffer.index,
 			ret);
 			list_del_init(&bufs->entry);
 			kfree(bufs);

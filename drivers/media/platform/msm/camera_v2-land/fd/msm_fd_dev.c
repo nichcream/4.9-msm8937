@@ -21,7 +21,7 @@
 #include <linux/msm_ion.h>
 #include <media/v4l2-ioctl.h>
 #include <media/v4l2-event.h>
-#include <media/videobuf2-core.h>
+#include <media/videobuf2-v4l2.h>
 
 #include "msm_fd_dev.h"
 #include "msm_fd_hw.h"
@@ -1177,7 +1177,7 @@ static void msm_fd_wq_handler(struct work_struct *work)
 	msm_fd_hw_schedule_next_buffer(fd);
 
 	/* Return buffer to vb queue */
-	active_buf->vb.v4l2_buf.sequence = ctx->fh.sequence;
+	active_buf->vb.v4l2_buffer.sequence = ctx->fh.sequence;
 	vb2_buffer_done(&active_buf->vb, VB2_BUF_STATE_DONE);
 
 	/* Sent event */
@@ -1185,7 +1185,7 @@ static void msm_fd_wq_handler(struct work_struct *work)
 	event.type = MSM_EVENT_FD;
 	fd_event = (struct msm_fd_event *)event.u.data;
 	fd_event->face_cnt = stats->face_cnt;
-	fd_event->buf_index = active_buf->vb.v4l2_buf.index;
+	fd_event->buf_index = active_buf->vb.v4l2_buffer.index;
 	fd_event->frame_id = ctx->sequence;
 	v4l2_event_queue_fh(&ctx->fh, &event);
 

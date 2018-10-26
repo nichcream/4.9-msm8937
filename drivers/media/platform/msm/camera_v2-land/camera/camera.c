@@ -534,7 +534,6 @@ static int camera_v4l2_vb2_q_init(struct file *filep)
 	/* default queue type */
 	q->type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
 	q->io_modes = VB2_USERPTR;
-	q->io_flags = 0;
 	q->buf_struct_size = sizeof(struct msm_vb2_buffer);
 	q->timestamp_flags = V4L2_BUF_FLAG_TIMESTAMP_MONOTONIC;
 	return vb2_queue_init(q);
@@ -725,7 +724,7 @@ static struct v4l2_file_operations camera_v4l2_fops = {
 	.open	= camera_v4l2_open,
 	.poll	= camera_v4l2_poll,
 	.release = camera_v4l2_close,
-	.ioctl   = video_ioctl2,
+	.unlocked_ioctl   = video_ioctl2,
 #ifdef CONFIG_COMPAT
 	.compat_ioctl32 = camera_v4l2_compat_ioctl,
 #endif
@@ -772,11 +771,10 @@ int camera_init_v4l2(struct device *dev, unsigned int *session)
 	if (WARN_ON(rc < 0))
 		goto media_fail;
 
-	rc = media_entity_init(&pvdev->vdev->entity, 0, NULL, 0);
+	rc = media_entity_pads_init(&pvdev->vdev->entity, 0, NULL);
 	if (WARN_ON(rc < 0))
 		goto entity_fail;
-	pvdev->vdev->entity.type = MEDIA_ENT_T_DEVNODE_V4L;
-	pvdev->vdev->entity.group_id = QCAMERA_VNODE_GROUP_ID;
+	pvdev->vdev->entity.function = QCAMERA_VNODE_GROUP_ID;
 #endif
 
 	v4l2_dev->notify = NULL;
