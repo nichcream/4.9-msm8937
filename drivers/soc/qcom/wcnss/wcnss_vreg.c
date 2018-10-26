@@ -22,6 +22,7 @@
 #include <linux/list.h>
 #include <linux/slab.h>
 #include <linux/clk.h>
+#include <linux/of.h>
 
 static void __iomem *msm_wcnss_base;
 static LIST_HEAD(power_on_lock_list);
