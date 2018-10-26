@@ -1080,7 +1080,6 @@ static int mdss_dsi_panel_low_power_config(struct mdss_panel_data *pdata,
 	return 0;
 }
 
-<<<<<<< 6f48d563e06aca4de27a34b405aa2d25e3876fa4
 static void mdss_dsi_parse_mdp_kickoff_threshold(struct device_node *np,
 	struct mdss_panel_info *pinfo)
 {
