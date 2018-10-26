@@ -58,6 +58,24 @@ static bool __power_supply_is_supplied_by(struct power_supply *supplier,
 	return false;
 }
 
+/**
+ * power_supply_set_charging_enabled - enable or disable charging
+ * @psy:	the power supply to control
+ * @enable:	sets enable property of power supply
+ */
+int power_supply_set_charging_enabled(struct power_supply *psy, bool enable)
+{
+	const union power_supply_propval ret = {enable,};
+
+	if (psy->desc->set_property)
+		return psy->desc->set_property(psy,
+				POWER_SUPPLY_PROP_CHARGING_ENABLED,
+				&ret);
+
+	return -ENXIO;
+}
+EXPORT_SYMBOL_GPL(power_supply_set_charging_enabled);
+
 static int __power_supply_changed_work(struct device *dev, void *data)
 {
 	struct power_supply *psy = data;
@@ -287,16 +305,17 @@ static inline int power_supply_check_supplies(struct power_supply *psy)
 int power_supply_get_battery_charge_state(struct power_supply *psy)
 {
 	union power_supply_propval ret = {0,};
+
  	if (!psy) {
 		 pr_err("power supply is NULL\n");
 	}
- 	if (psy->get_property) {
-		psy->get_property(psy, POWER_SUPPLY_PROP_PRESENT, &ret);
+ 	if (psy->desc->get_property) {
+		psy->desc->get_property(psy, POWER_SUPPLY_PROP_PRESENT, &ret);
 	}
  	pr_debug("online:%d\n", ret.intval);
  	return ret.intval;
  }
-EXPORT_SYMBOL(power_supply_get_battery_charge_state)
+EXPORT_SYMBOL(power_supply_get_battery_charge_state);
 
 static int __power_supply_am_i_supplied(struct device *dev, void *data)
 {
@@ -740,7 +759,7 @@ static ssize_t show_StopCharging_Test(struct device *dev, struct device_attribut
 	int rc;
  	batt_psy = power_supply_get_by_name("battery");
 	if (batt_psy) {
-		rc = power_supply_set_charging_enabled(batt_psy, 0);
+		power_supply_set_charging_enabled(batt_psy, 0);
 		if (rc)
 			pr_err("disable charging failed\n");
 		pr_err("show_StopCharging_Test : %x success\n", charging_enable);
@@ -761,7 +780,7 @@ static DEVICE_ATTR(StopCharging_Test, 0664, show_StopCharging_Test, store_StopCh
 	int rc;
  	batt_psy = power_supply_get_by_name("battery");
 	if (batt_psy) {
-		rc = power_supply_set_charging_enabled(batt_psy, 1);
+		power_supply_set_charging_enabled(batt_psy, 1);
 		if (rc)
 			pr_err("enable charging failed\n");
 		pr_err("show_StartCharging_Test : %x success\n", charging_enable);
@@ -860,7 +879,7 @@ __power_supply_register(struct device *parent,
 
 	return psy;
 
-	if (strcmp(psy->name, "battery") == 0) {
+	if (strcmp(psy->desc->name, "battery") == 0) {
 		pr_err("battery powe supply creat attr file!!\n");
 		ret_device_file = device_create_file(dev, &dev_attr_StopCharging_Test);
 		ret_device_file = device_create_file(dev, &dev_attr_StartCharging_Test);
