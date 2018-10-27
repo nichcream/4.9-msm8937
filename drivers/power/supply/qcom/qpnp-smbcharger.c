@@ -3818,6 +3818,8 @@ static void smbchg_external_power_changed(struct power_supply *psy)
 {
 	struct smbchg_chip *chip = power_supply_get_drvdata(psy);
 	int rc, soc;
+	enum power_supply_type usb_supply_type;
+	char *usb_type_name = "null";
 
 	read_usb_type(chip, &usb_type_name, &usb_supply_type);
 	if ((usb_supply_type == POWER_SUPPLY_TYPE_USB) && (chip->usb_present) && (rerun_usb_insertion < 1)) {
