@@ -1,3 +1,4 @@
+
 /*
  * Core MDSS framebuffer driver.
  *
@@ -36,6 +37,7 @@
 #include <linux/of.h>
 #include <linux/of_address.h>
 #include <linux/of_platform.h>
+#include <linux/leds.h>
 #include <linux/proc_fs.h>
 #include <linux/pm_runtime.h>
 #include <linux/slab.h>
