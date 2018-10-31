@@ -34,9 +34,9 @@
  * To allow proper structure padding for 64bit/32bit target
  */
 #ifdef __LP64
-#define MDP_LAYER_COMMIT_V1_PAD 1
-#else
 #define MDP_LAYER_COMMIT_V1_PAD 2
+#else
+#define MDP_LAYER_COMMIT_V1_PAD 3
 #endif
 
 /*
@@ -487,9 +487,6 @@ struct mdp_layer_commit_v1 {
 
 	/* FRC info per device which contains frame count and timestamp */
 	struct mdp_frc_info __user *frc_info;
-
-	/* Backlight level that would update when display commit */
-	uint32_t		bl_level;
 
 	/* 32-bits reserved value for future usage. */
 	uint32_t		reserved[MDP_LAYER_COMMIT_V1_PAD];
