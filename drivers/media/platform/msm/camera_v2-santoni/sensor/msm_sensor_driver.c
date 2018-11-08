@@ -11,6 +11,7 @@
  * GNU General Public License for more details.
  */
 
+#define __NEED_MEDIA_LEGACY_API
 #define SENSOR_DRIVER_I2C "i2c_camera"
 /* Header file declaration */
 #include "msm_sensor.h"
@@ -74,7 +75,7 @@ static struct platform_driver msm_sensor_platform_driver = {
 
 static struct v4l2_subdev_info msm_sensor_driver_subdev_info[] = {
 	{
-		.code = V4L2_MBUS_FMT_SBGGR10_1X10,
+		.code = MEDIA_BUS_FMT_SBGGR10_1X10,
 		.colorspace = V4L2_COLORSPACE_JPEG,
 		.fmt = 1,
 		.order = 0,
@@ -103,7 +104,7 @@ static int32_t msm_sensor_driver_create_i2c_v4l_subdev
 	v4l2_set_subdevdata(&s_ctrl->msm_sd.sd, client);
 	s_ctrl->msm_sd.sd.flags |= V4L2_SUBDEV_FL_HAS_DEVNODE;
 	media_entity_init(&s_ctrl->msm_sd.sd.entity, 0, NULL, 0);
-	s_ctrl->msm_sd.sd.entity.type = MEDIA_ENT_T_V4L2_SUBDEV;
+	s_ctrl->msm_sd.sd.entity.function = MEDIA_ENT_T_V4L2_SUBDEV;
 	s_ctrl->msm_sd.sd.entity.group_id = MSM_CAMERA_SUBDEV_SENSOR;
 	s_ctrl->msm_sd.sd.entity.name =	s_ctrl->msm_sd.sd.name;
 	s_ctrl->sensordata->sensor_info->session_id = session_id;
@@ -145,7 +146,7 @@ static int32_t msm_sensor_driver_create_v4l_subdev
 	v4l2_set_subdevdata(&s_ctrl->msm_sd.sd, s_ctrl->pdev);
 	s_ctrl->msm_sd.sd.flags |= V4L2_SUBDEV_FL_HAS_DEVNODE;
 	media_entity_init(&s_ctrl->msm_sd.sd.entity, 0, NULL, 0);
-	s_ctrl->msm_sd.sd.entity.type = MEDIA_ENT_T_V4L2_SUBDEV;
+	s_ctrl->msm_sd.sd.entity.function = MEDIA_ENT_T_V4L2_SUBDEV;
 	s_ctrl->msm_sd.sd.entity.group_id = MSM_CAMERA_SUBDEV_SENSOR;
 	s_ctrl->msm_sd.sd.entity.name = s_ctrl->msm_sd.sd.name;
 	s_ctrl->msm_sd.close_seq = MSM_SD_CLOSE_2ND_CATEGORY | 0x3;

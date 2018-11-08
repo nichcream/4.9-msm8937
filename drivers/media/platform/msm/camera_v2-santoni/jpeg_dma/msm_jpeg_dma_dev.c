@@ -1125,17 +1125,17 @@ static const struct v4l2_ioctl_ops fd_ioctl_ops = {
  * @dst_buf: Pointer to Vb2 destination buffer.
  */
 static void msm_jpegdma_process_buffers(struct jpegdma_ctx *ctx,
-	struct vb2_buffer *src_buf, struct vb2_buffer *dst_buf)
+	struct vb2_v4l2_buffer *src_buf, struct vb2_v4l2_buffer *dst_buf)
 {
 	struct msm_jpegdma_buf_handle *buf_handle;
 	struct msm_jpegdma_addr addr;
 	int plane_idx;
 	int config_idx;
 
-	buf_handle = dst_buf->planes[0].mem_priv;
+	buf_handle = dst_buf->vb2_buf.planes[0].mem_priv;
 	addr.out_addr = buf_handle->addr;
 
-	buf_handle = src_buf->planes[0].mem_priv;
+	buf_handle = src_buf->vb2_buf.planes[0].mem_priv;
 	addr.in_addr = buf_handle->addr;
 
 	plane_idx = ctx->plane_idx;
@@ -1151,8 +1151,8 @@ static void msm_jpegdma_process_buffers(struct jpegdma_ctx *ctx,
  */
 static void msm_jpegdma_device_run(void *priv)
 {
-	struct vb2_buffer *src_buf;
-	struct vb2_buffer *dst_buf;
+	struct vb2_v4l2_buffer *src_buf;
+	struct vb2_v4l2_buffer *dst_buf;
 	struct jpegdma_ctx *ctx = priv;
 
 	dev_dbg(ctx->jdma_device->dev, "Jpeg v4l2 dma device run E\n");
@@ -1213,8 +1213,8 @@ static struct v4l2_m2m_ops msm_jpegdma_m2m_ops = {
  */
 void msm_jpegdma_isr_processing_done(struct msm_jpegdma_device *dma)
 {
-	struct vb2_buffer *src_buf;
-	struct vb2_buffer *dst_buf;
+	struct vb2_v4l2_buffer *src_buf;
+	struct vb2_v4l2_buffer *dst_buf;
 	struct jpegdma_ctx *ctx;
 
 	mutex_lock(&dma->lock);

@@ -148,6 +148,7 @@ static struct msm_bus_paths msm_isp_bus_client_config[] = {
 
 static struct msm_bus_scale_pdata msm_isp_bus_client_pdata = {
 	msm_isp_bus_client_config,
+	NULL,
 	ARRAY_SIZE(msm_isp_bus_client_config),
 	.name = "msm_camera_isp",
 };

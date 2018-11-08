@@ -10,6 +10,8 @@
  * GNU General Public License for more details.
  */
 
+#define __NEED_MEDIA_LEGACY_API
+
 #include <linux/delay.h>
 #include <linux/clk.h>
 #include <linux/io.h>
@@ -622,7 +624,7 @@ int vfe_hw_probe(struct platform_device *pdev)
 	spin_lock_init(&vfe_dev->reg_update_lock);
 	spin_lock_init(&req_history_lock);
 	media_entity_init(&vfe_dev->subdev.sd.entity, 0, NULL, 0);
-	vfe_dev->subdev.sd.entity.type = MEDIA_ENT_T_V4L2_SUBDEV;
+	vfe_dev->subdev.sd.entity.function = MEDIA_ENT_T_V4L2_SUBDEV;
 	vfe_dev->subdev.sd.entity.group_id = MSM_CAMERA_SUBDEV_VFE;
 	vfe_dev->subdev.sd.entity.name = pdev->name;
 	vfe_dev->subdev.close_seq = MSM_SD_CLOSE_1ST_CATEGORY | 0x2;
