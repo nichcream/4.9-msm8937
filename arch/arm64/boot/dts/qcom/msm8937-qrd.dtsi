@@ -18,9 +18,8 @@
 	gpio_keys {
 		compatible = "gpio-keys";
 		input-name = "gpio-keys";
-		pinctrl-names = "tlmm_gpio_key_active","tlmm_gpio_key_suspend";
+		pinctrl-names = "default";
 		pinctrl-0 = <&gpio_key_active>;
-		pinctrl-1 = <&gpio_key_suspend>;
 
 		vol_up {
 			label = "volume_up";
@@ -28,6 +27,8 @@
 			linux,input-type = <1>;
 			linux,code = <115>;
 			debounce-interval = <15>;
+			linux,can-disable;
+			gpio-key,wakeup;
 		};
 	};
 
@@ -65,15 +66,6 @@
 		"AMIC1", "MIC BIAS External",
 		"AMIC2", "MIC BIAS Internal2",
 		"AMIC3", "MIC BIAS External";
-};
-
-
-&pm8937_cajon_dig {
-	status = "okay";
-};
-
-&pm8937_cajon_analog {
-	status = "okay";
 };
 
 &blsp1_uart2 {
@@ -123,15 +115,6 @@
 	pinctrl-0 = <&sdc2_clk_on &sdc2_cmd_on &sdc2_data_on &sdc2_cd_on>;
 	pinctrl-1 = <&sdc2_clk_off &sdc2_cmd_off &sdc2_data_off &sdc2_cd_off>;
 
-	#address-cells = <0>;
-	interrupt-parent = <&sdhc_2>;
-	interrupts = <0 1 2>;
-	#interrupt-cells = <1>;
-	interrupt-map-mask = <0xffffffff>;
-	interrupt-map = <0 &intc 0 125 0
-		1 &intc 0 221 0
-		2 &tlmm 67 0>;
-	interrupt-names = "hc_irq", "pwr_irq", "status_irq";
 	cd-gpios = <&tlmm 67 0x1>;
 
 	qcom,clk-rates = <400000 20000000 25000000 50000000 100000000
