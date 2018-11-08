@@ -375,7 +375,7 @@
 	qcom,vmax-mv = <2700>;
 };
 
-&pmi8950_charger {
+&qpnp_smbcharger {
 	qcom,qpnp-smbcharger {
 			/delete-property/qcom,float-voltage-mv;
 			qcom,thermal-mitigation = <2000 1000 800 800>;
