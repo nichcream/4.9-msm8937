@@ -12,6 +12,8 @@
 
 #define pr_fmt(fmt) "MSM-SENSOR-INIT %s:%d " fmt "\n", __func__, __LINE__
 
+#define __NEED_MEDIA_LEGACY_API
+
 /* Header files */
 #include "msm_sensor_init.h"
 #include "msm_sensor_driver.h"
@@ -185,7 +187,7 @@ static int __init msm_sensor_init_module(void)
 	s_init->msm_sd.sd.internal_ops = &msm_sensor_init_internal_ops;
 	s_init->msm_sd.sd.flags |= V4L2_SUBDEV_FL_HAS_DEVNODE;
 	media_entity_init(&s_init->msm_sd.sd.entity, 0, NULL, 0);
-	s_init->msm_sd.sd.entity.type = MEDIA_ENT_T_V4L2_SUBDEV;
+	s_init->msm_sd.sd.entity.function = MEDIA_ENT_T_V4L2_SUBDEV;
 	s_init->msm_sd.sd.entity.group_id = MSM_CAMERA_SUBDEV_SENSOR_INIT;
 	s_init->msm_sd.sd.entity.name = s_init->msm_sd.sd.name;
 	s_init->msm_sd.close_seq = MSM_SD_CLOSE_2ND_CATEGORY | 0x6;
