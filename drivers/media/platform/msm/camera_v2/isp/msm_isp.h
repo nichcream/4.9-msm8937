@@ -1,4 +1,4 @@
-/* Copyright (c) 2013-2018, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2013-2016, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -19,14 +19,13 @@
 #include <linux/io.h>
 #include <linux/list.h>
 #include <linux/delay.h>
+#include <linux/avtimer_kernel.h>
 #include <media/v4l2-subdev.h>
 #include <media/msmb_isp.h>
 #include <linux/msm-bus.h>
 #include <linux/msm-bus-board.h>
 
 #include "msm_buf_mgr.h"
-#include "cam_hw_ops.h"
-#include <soc/qcom/cx_ipeak.h>
 
 #define VFE40_8974V1_VERSION 0x10000018
 #define VFE40_8974V2_VERSION 0x1001001A
@@ -38,7 +37,6 @@
 #define VFE40_8952_VERSION 0x10060000
 #define VFE40_8976_VERSION 0x10050000
 #define VFE40_8937_VERSION 0x10080000
-#define VFE40_8917_VERSION 0x10080001
 #define VFE40_8953_VERSION 0x10090000
 #define VFE32_8909_VERSION 0x30600
 
@@ -64,8 +62,6 @@
 #define MAX_BUFFERS_IN_HW 2
 
 #define MAX_VFE 2
-#define MAX_VFE_IRQ_DEBUG_DUMP_SIZE 10
-#define MAX_RECOVERY_THRESHOLD  5
 
 struct vfe_device;
 struct msm_vfe_axi_stream;
@@ -73,19 +69,8 @@ struct msm_vfe_stats_stream;
 
 #define VFE_SD_HW_MAX VFE_SD_COMMON
 
-/* Irq operations to perform on the irq mask register */
-enum msm_isp_irq_operation {
-	/* enable the irq bits in given parameters */
-	MSM_ISP_IRQ_ENABLE = 1,
-	/* disable the irq bits in the given parameters */
-	MSM_ISP_IRQ_DISABLE = 2,
-	/* set the irq bits to the given parameters */
-	MSM_ISP_IRQ_SET = 3,
-};
-
 /* This struct is used to save/track SOF info for some INTF.
- * e.g. used in Master-Slave mode
- */
+ * e.g. used in Master-Slave mode */
 struct msm_vfe_sof_info {
 	uint32_t timestamp_ms;
 	uint32_t mono_timestamp_ms;
@@ -96,9 +81,11 @@ struct msm_vfe_sof_info {
 struct msm_vfe_dual_hw_ms_info {
 	/* type is Master/Slave */
 	enum msm_vfe_dual_hw_ms_type dual_hw_ms_type;
-	enum msm_vfe_dual_cam_sync_mode sync_state;
-	struct msm_vfe_sof_info sof_info;
-	int index;
+	/* sof_info is resource from common_data. If NULL, then this INTF
+	 * sof does not need to be saved */
+	struct msm_vfe_sof_info *sof_info;
+	/* slave_id is index in common_data sof_info array for slaves */
+	uint8_t slave_id;
 };
 
 struct vfe_subscribe_info {
@@ -134,8 +121,6 @@ struct msm_isp_timestamp {
 };
 
 struct msm_vfe_irq_ops {
-	void (*read_and_clear_irq_status)(struct vfe_device *vfe_dev,
-		uint32_t *irq_status0, uint32_t *irq_status1);
 	void (*read_irq_status)(struct vfe_device *vfe_dev,
 		uint32_t *irq_status0, uint32_t *irq_status1);
 	void (*process_reg_update)(struct vfe_device *vfe_dev,
@@ -159,11 +144,7 @@ struct msm_vfe_irq_ops {
 		uint32_t irq_status0, uint32_t irq_status1,
 		uint32_t pingpong_status,
 		struct msm_isp_timestamp *ts);
-	void (*config_irq)(struct vfe_device *vfe_dev,
-		uint32_t irq_status0, uint32_t irq_status1,
-		enum msm_isp_irq_operation);
-	void (*preprocess_camif_irq)(struct vfe_device *vfe_dev,
-		uint32_t irq_status0);
+	void (*enable_camif_err)(struct vfe_device *vfe_dev, int enable);
 };
 
 struct msm_vfe_axi_ops {
@@ -174,7 +155,7 @@ struct msm_vfe_axi_ops {
 	int32_t (*cfg_io_format)(struct vfe_device *vfe_dev,
 		enum msm_vfe_axi_stream_src stream_src,
 		uint32_t io_format);
-	void (*cfg_framedrop)(struct vfe_device *vfe_dev,
+	void (*cfg_framedrop)(void __iomem *vfe_base,
 		struct msm_vfe_axi_stream *stream_info,
 		uint32_t framedrop_pattern, uint32_t framedrop_period);
 	void (*clear_framedrop)(struct vfe_device *vfe_dev,
@@ -199,22 +180,23 @@ struct msm_vfe_axi_ops {
 		uint8_t plane_idx);
 	void (*clear_wm_xbar_reg)(struct vfe_device *vfe_dev,
 		struct msm_vfe_axi_stream *stream_info, uint8_t plane_idx);
-	void (*cfg_ub)(struct vfe_device *vfe_dev,
-		enum msm_vfe_input_src frame_src);
+
+	void (*cfg_ub)(struct vfe_device *vfe_dev);
+
 	void (*read_wm_ping_pong_addr)(struct vfe_device *vfe_dev);
+
 	void (*update_ping_pong_addr)(void __iomem *vfe_base,
 		uint8_t wm_idx, uint32_t pingpong_bit, dma_addr_t paddr,
 		int32_t buf_size);
+
 	uint32_t (*get_wm_mask)(uint32_t irq_status0, uint32_t irq_status1);
 	uint32_t (*get_comp_mask)(uint32_t irq_status0, uint32_t irq_status1);
 	uint32_t (*get_pingpong_status)(struct vfe_device *vfe_dev);
 	int (*halt)(struct vfe_device *vfe_dev, uint32_t blocking);
-	void (*restart)(struct vfe_device *vfe_dev, uint32_t blocking,
+	int (*restart)(struct vfe_device *vfe_dev, uint32_t blocking,
 		uint32_t enable_camif);
 	void (*update_cgc_override)(struct vfe_device *vfe_dev,
 		uint8_t wm_idx, uint8_t cgc_override);
-	uint32_t (*ub_reg_offset)(struct vfe_device *vfe_dev, int idx);
-	uint32_t (*get_ub_size)(struct vfe_device *vfe_dev);
 };
 
 struct msm_vfe_core_ops {
@@ -235,27 +217,19 @@ struct msm_vfe_core_ops {
 	void (*cfg_rdi_reg)(struct vfe_device *vfe_dev,
 		struct msm_vfe_rdi_cfg *rdi_cfg,
 		enum msm_vfe_input_src input_src);
+	int (*get_platform_data)(struct vfe_device *vfe_dev);
 	void (*get_error_mask)(uint32_t *error_mask0, uint32_t *error_mask1);
 	void (*process_error_status)(struct vfe_device *vfe_dev);
 	void (*get_overflow_mask)(uint32_t *overflow_mask);
 	void (*get_irq_mask)(struct vfe_device *vfe_dev,
 		uint32_t *irq0_mask, uint32_t *irq1_mask);
+	void (*restore_irq_mask)(struct vfe_device *vfe_dev);
 	void (*get_halt_restart_mask)(uint32_t *irq0_mask,
 		uint32_t *irq1_mask);
 	void (*get_rdi_wm_mask)(struct vfe_device *vfe_dev,
 		uint32_t *rdi_wm_mask);
 	bool (*is_module_cfg_lock_needed)(uint32_t reg_offset);
-	int (*ahb_clk_cfg)(struct vfe_device *vfe_dev,
-			struct msm_isp_ahb_clk_cfg *ahb_cfg);
-	int (*start_fetch_eng_multi_pass)(struct vfe_device *vfe_dev,
-		void *arg);
-	void (*set_halt_restart_mask)(struct vfe_device *vfe_dev);
-	void (*set_bus_err_ign_mask)(struct vfe_device *vfe_dev,
-		int wm, int enable);
-	void (*get_bus_err_mask)(struct vfe_device *vfe_dev,
-		uint32_t *bus_err, uint32_t *irq_status1);
 };
-
 struct msm_vfe_stats_ops {
 	int (*get_stats_idx)(enum msm_isp_stats_type stats_type);
 	int (*check_streams)(struct msm_vfe_stats_stream *stream_info);
@@ -282,9 +256,9 @@ struct msm_vfe_stats_ops {
 	void (*enable_module)(struct vfe_device *vfe_dev,
 		uint32_t stats_mask, uint8_t enable);
 
-	void (*update_ping_pong_addr)(struct vfe_device *vfe_dev,
+	void (*update_ping_pong_addr)(void __iomem *vfe_base,
 		struct msm_vfe_stats_stream *stream_info,
-		uint32_t pingpong_status, dma_addr_t paddr, uint32_t buf_size);
+		uint32_t pingpong_status, dma_addr_t paddr);
 
 	uint32_t (*get_frame_id)(struct vfe_device *vfe_dev);
 	uint32_t (*get_wm_mask)(uint32_t irq_status0, uint32_t irq_status1);
@@ -293,48 +267,6 @@ struct msm_vfe_stats_ops {
 
 	void (*update_cgc_override)(struct vfe_device *vfe_dev,
 		uint32_t stats_mask, uint8_t enable);
-	void (*enable_stats_wm)(struct vfe_device *vfe_dev,
-		uint32_t stats_mask, uint8_t enable);
-};
-
-enum msm_isp_hw_client {
-	ISP_VFE0,
-	ISP_VFE1,
-	ISP_CPP,
-	MAX_ISP_CLIENT,
-};
-
-struct msm_isp_bandwidth_info {
-	uint32_t active;
-	uint64_t ab;
-	uint64_t ib;
-};
-
-struct msm_isp_bandwidth_mgr {
-	uint32_t bus_client;
-	uint32_t bus_vector_active_idx;
-	uint32_t use_count;
-	struct msm_isp_bandwidth_info client_info[MAX_ISP_CLIENT];
-	int (*update_bw)(struct msm_isp_bandwidth_mgr *isp_bandwidth_mgr);
-	void (*deinit_bw_mgr)(struct msm_isp_bandwidth_mgr *isp_bandwidth_mgr);
-};
-
-struct msm_vfe_platform_ops {
-	int (*get_platform_data)(struct vfe_device *vfe_dev);
-	int (*enable_clks)(struct vfe_device *vfe_dev, int enable);
-	int (*get_clks)(struct vfe_device *vfe_dev);
-	void (*put_clks)(struct vfe_device *vfe_dev);
-	int (*get_clk_rates)(struct vfe_device *vfe_dev,
-				struct msm_isp_clk_rates *rates);
-	int (*get_max_clk_rate)(struct vfe_device *vfe_dev, long *rate);
-	int (*set_clk_rate)(struct vfe_device *vfe_dev, long *rate);
-	int (*enable_regulators)(struct vfe_device *vfe_dev, int enable);
-	int (*get_regulators)(struct vfe_device *vfe_dev);
-	void (*put_regulators)(struct vfe_device *vfe_dev);
-	int (*init_bw_mgr)(struct vfe_device *vfe_dev,
-		struct msm_isp_bandwidth_mgr *isp_bandwidth_mgr);
-	int (*update_bw)(struct msm_isp_bandwidth_mgr *isp_bandwidth_mgr);
-	void (*deinit_bw_mgr)(struct msm_isp_bandwidth_mgr *isp_bandwidth_mgr);
 };
 
 struct msm_vfe_ops {
@@ -342,7 +274,6 @@ struct msm_vfe_ops {
 	struct msm_vfe_axi_ops axi_ops;
 	struct msm_vfe_core_ops core_ops;
 	struct msm_vfe_stats_ops stats_ops;
-	struct msm_vfe_platform_ops platform_ops;
 };
 
 struct msm_vfe_hardware_info {
@@ -357,7 +288,6 @@ struct msm_vfe_hardware_info {
 	uint32_t dmi_reg_offset;
 	uint32_t min_ab;
 	uint32_t min_ib;
-	const char *regulator_names[];
 };
 
 struct msm_vfe_axi_hardware_info {
@@ -385,6 +315,12 @@ enum msm_vfe_axi_state {
 	UPDATING,
 };
 
+enum msm_vfe_axi_cfg_update_state {
+	NO_AXI_CFG_UPDATE,
+	APPLYING_UPDATE_RESUME,
+	UPDATE_REQUESTED,
+};
+
 #define VFE_NO_DROP	       0xFFFFFFFF
 #define VFE_DROP_EVERY_2FRAME  0x55555555
 #define VFE_DROP_EVERY_4FRAME  0x11111111
@@ -400,16 +336,7 @@ enum msm_vfe_axi_stream_type {
 struct msm_vfe_frame_request_queue {
 	struct list_head list;
 	enum msm_vfe_buff_queue_id buff_queue_id;
-	uint32_t buf_index;
 	uint8_t cmd_used;
-};
-
-enum msm_isp_comp_irq_types {
-	MSM_ISP_COMP_IRQ_REG_UPD = 0,
-	MSM_ISP_COMP_IRQ_EPOCH = 1,
-	MSM_ISP_COMP_IRQ_PING_BUFDONE = 2,
-	MSM_ISP_COMP_IRQ_PONG_BUFDONE = 3,
-	MSM_ISP_COMP_IRQ_MAX = 4
 };
 
 #define MSM_VFE_REQUESTQ_SIZE 8
@@ -419,10 +346,10 @@ struct msm_vfe_axi_stream {
 	enum msm_vfe_axi_state state;
 	enum msm_vfe_axi_stream_src stream_src;
 	uint8_t num_planes;
-	uint8_t wm[MAX_VFE][MAX_PLANES_PER_STREAM];
+	uint8_t wm[MAX_PLANES_PER_STREAM];
 	uint32_t output_format;/*Planar/RAW/Misc*/
-	struct msm_vfe_axi_plane_cfg plane_cfg[MAX_VFE][MAX_PLANES_PER_STREAM];
-	uint8_t comp_mask_index[MAX_VFE];
+	struct msm_vfe_axi_plane_cfg plane_cfg[MAX_PLANES_PER_STREAM];
+	uint8_t comp_mask_index;
 	struct msm_isp_buffer *buf[2];
 	uint32_t session_id;
 	uint32_t stream_id;
@@ -434,7 +361,7 @@ struct msm_vfe_axi_stream {
 	struct list_head request_q;
 	struct msm_vfe_frame_request_queue
 			request_queue_cmd[MSM_VFE_REQUESTQ_SIZE];
-	uint32_t stream_handle[MAX_VFE];
+	uint32_t stream_handle;
 	uint8_t buf_divert;
 	enum msm_vfe_axi_stream_type stream_type;
 	uint32_t frame_based;
@@ -447,29 +374,16 @@ struct msm_vfe_axi_stream {
 	spinlock_t lock;
 
 	/*Bandwidth calculation info*/
-	uint32_t max_width[MAX_VFE];
+	uint32_t max_width;
 	/*Based on format plane size in Q2. e.g NV12 = 1.5*/
 	uint32_t format_factor;
-	uint32_t bandwidth[MAX_VFE];
+	uint32_t bandwidth;
 
 	uint32_t runtime_num_burst_capture;
 	uint32_t runtime_output_format;
-	enum msm_stream_rdi_input_type  rdi_input_type;
+	enum msm_stream_memory_input_t  memory_input;
 	struct msm_isp_sw_framskip sw_skip;
-	int8_t sw_ping_pong_bit;
-
-	struct vfe_device *vfe_dev[MAX_VFE];
-	int num_isp;
-	struct completion active_comp;
-	struct completion inactive_comp;
-	uint32_t update_vfe_mask;
-	/*
-	 * bits in this mask are set that correspond to vfe_id of
-	 * the vfe on which this stream operates
-	 */
-	uint32_t vfe_mask;
-	uint32_t composite_irq[MSM_ISP_COMP_IRQ_MAX];
-	int lpm_mode;
+	uint8_t sw_ping_pong_bit;
 };
 
 struct msm_vfe_axi_composite_info {
@@ -478,15 +392,17 @@ struct msm_vfe_axi_composite_info {
 };
 
 enum msm_vfe_camif_state {
+	CAMIF_STOPPED,
 	CAMIF_ENABLE,
 	CAMIF_DISABLE,
+	CAMIF_STOPPING,
 };
 
 struct msm_vfe_src_info {
 	uint32_t frame_id;
 	uint32_t reg_update_frame_id;
 	uint8_t active;
-	uint8_t stream_count;
+	uint8_t pix_stream_count;
 	uint8_t raw_stream_count;
 	enum msm_vfe_inputmux input_mux;
 	uint32_t width;
@@ -497,8 +413,6 @@ struct msm_vfe_src_info {
 	struct timeval time_stamp;
 	enum msm_vfe_dual_hw_type dual_hw_type;
 	struct msm_vfe_dual_hw_ms_info dual_hw_ms_info;
-	bool accept_frame;
-	uint32_t lpm;
 };
 
 struct msm_vfe_fetch_engine_info {
@@ -519,6 +433,7 @@ enum msm_wm_ub_cfg_type {
 
 struct msm_vfe_axi_shared_data {
 	struct msm_vfe_axi_hardware_info *hw_info;
+	struct msm_vfe_axi_stream stream_info[VFE_AXI_SRC_MAX];
 	uint32_t free_wm[MAX_NUM_WM];
 	uint32_t wm_image_size[MAX_NUM_WM];
 	enum msm_wm_ub_cfg_type wm_ub_cfg_policy;
@@ -530,24 +445,25 @@ struct msm_vfe_axi_shared_data {
 	struct msm_vfe_axi_composite_info
 		composite_info[MAX_NUM_COMPOSITE_MASK];
 	uint8_t num_used_composite_mask;
+	uint32_t stream_update[VFE_SRC_MAX];
 	atomic_t axi_cfg_update[VFE_SRC_MAX];
+	enum msm_isp_camif_update_state pipeline_update;
 	struct msm_vfe_src_info src_info[VFE_SRC_MAX];
 	uint16_t stream_handle_cnt;
 	uint32_t event_mask;
 	uint8_t enable_frameid_recovery;
-	uint8_t recovery_count;
+	enum msm_vfe_camif_state camif_state;
 };
 
 struct msm_vfe_stats_hardware_info {
 	uint32_t stats_capability_mask;
 	uint8_t *stats_ping_pong_offset;
-	uint8_t *stats_wm_index;
 	uint8_t num_stats_type;
 	uint8_t num_stats_comp_mask;
 };
 
 enum msm_vfe_stats_state {
-	STATS_AVAILABLE,
+	STATS_AVALIABLE,
 	STATS_INACTIVE,
 	STATS_ACTIVE,
 	STATS_START_PENDING,
@@ -559,7 +475,7 @@ enum msm_vfe_stats_state {
 struct msm_vfe_stats_stream {
 	uint32_t session_id;
 	uint32_t stream_id;
-	uint32_t stream_handle[MAX_VFE];
+	uint32_t stream_handle;
 	uint32_t composite_flag;
 	enum msm_isp_stats_type stats_type;
 	enum msm_vfe_stats_state state;
@@ -569,40 +485,29 @@ struct msm_vfe_stats_stream {
 	uint32_t init_stats_frame_drop;
 	struct msm_isp_sw_framskip sw_skip;
 
-	uint32_t buffer_offset[MAX_VFE];
+	uint32_t buffer_offset;
 	struct msm_isp_buffer *buf[2];
 	uint32_t bufq_handle;
-
-	spinlock_t lock;
-	struct vfe_device *vfe_dev[MAX_VFE];
-	int num_isp;
-	struct completion active_comp;
-	struct completion inactive_comp;
-	/*
-	 * bits in this mask are set that correspond to vfe_id of
-	 * the vfe on which this stream operates
-	 */
-	uint32_t vfe_mask;
-	uint32_t composite_irq[MSM_ISP_COMP_IRQ_MAX];
 };
 
 struct msm_vfe_stats_shared_data {
+	struct msm_vfe_stats_stream stream_info[MSM_ISP_STATS_MAX];
 	uint8_t num_active_stream;
 	atomic_t stats_comp_mask[MAX_NUM_STATS_COMP_MASK];
 	uint16_t stream_handle_cnt;
+	atomic_t stats_update;
 };
 
 struct msm_vfe_tasklet_queue_cmd {
 	struct list_head list;
 	uint32_t vfeInterruptStatus0;
 	uint32_t vfeInterruptStatus1;
-	uint32_t vfe_pingpong_status;
+	uint32_t vfePingPongStatus;
 	struct msm_isp_timestamp ts;
 	uint8_t cmd_used;
-	struct vfe_device *vfe_dev;
 };
 
-#define MSM_VFE_TASKLETQ_SIZE 400
+#define MSM_VFE_TASKLETQ_SIZE 200
 
 enum msm_vfe_overflow_state {
 	NO_OVERFLOW,
@@ -612,6 +517,8 @@ enum msm_vfe_overflow_state {
 
 struct msm_vfe_error_info {
 	atomic_t overflow_state;
+	uint32_t overflow_recover_irq_mask0;
+	uint32_t overflow_recover_irq_mask1;
 	uint32_t error_mask0;
 	uint32_t error_mask1;
 	uint32_t violation_status;
@@ -660,6 +567,19 @@ struct msm_isp_statistics {
 	int64_t cpp_clk_rate;
 };
 
+enum msm_isp_hw_client {
+	ISP_VFE0,
+	ISP_VFE1,
+	ISP_CPP,
+	MAX_ISP_CLIENT,
+};
+
+struct msm_isp_bandwidth_info {
+	uint32_t active;
+	uint64_t ab;
+	uint64_t ib;
+};
+
 struct msm_isp_bw_req_info {
 	uint32_t client;
 	unsigned long long timestamp;
@@ -694,56 +614,19 @@ struct dual_vfe_resource {
 
 struct master_slave_resource_info {
 	enum msm_vfe_dual_hw_type dual_hw_type;
+	struct msm_vfe_sof_info master_sof_info;
+	uint8_t master_active;
 	uint32_t sof_delta_threshold; /* Updated by Master */
-	uint32_t active_src_mask;
-	uint32_t src_sof_mask;
-	int master_index;
-	int primary_slv_idx;
-	struct msm_vfe_src_info *src_info[MAX_VFE * VFE_SRC_MAX];
-	uint32_t num_src;
-	enum msm_vfe_dual_cam_sync_mode dual_sync_mode;
-};
-
-struct msm_vfe_irq_debug_info {
-	uint32_t vfe_id;
-	struct msm_isp_timestamp ts;
-	uint32_t core_id;
-	uint32_t irq_status0[MAX_VFE];
-	uint32_t irq_status1[MAX_VFE];
-	uint32_t ping_pong_status[MAX_VFE];
-};
-
-struct msm_vfe_irq_dump {
-	spinlock_t common_dev_irq_dump_lock;
-	spinlock_t common_dev_tasklet_dump_lock;
-	uint8_t current_irq_index;
-	uint8_t current_tasklet_index;
-	struct msm_vfe_irq_debug_info
-		irq_debug[MAX_VFE_IRQ_DEBUG_DUMP_SIZE];
-	struct msm_vfe_irq_debug_info
-		tasklet_debug[MAX_VFE_IRQ_DEBUG_DUMP_SIZE];
-};
-
-struct msm_vfe_tasklet {
-	spinlock_t tasklet_lock;
-	uint8_t taskletq_idx;
-	struct list_head tasklet_q;
-	struct tasklet_struct tasklet;
-	struct msm_vfe_tasklet_queue_cmd
-		tasklet_queue_cmd[MSM_VFE_TASKLETQ_SIZE];
+	uint32_t num_slave;
+	uint32_t reserved_slave_mask;
+	uint32_t slave_active_mask;
+	struct msm_vfe_sof_info slave_sof_info[MS_NUM_SLAVE_MAX];
 };
 
 struct msm_vfe_common_dev_data {
 	spinlock_t common_dev_data_lock;
 	struct dual_vfe_resource *dual_vfe_res;
 	struct master_slave_resource_info ms_resource;
-	struct msm_vfe_axi_stream streams[VFE_AXI_SRC_MAX * MAX_VFE];
-	struct msm_vfe_stats_stream stats_streams[MSM_ISP_STATS_MAX * MAX_VFE];
-	struct mutex vfe_common_mutex;
-	uint8_t pd_buf_idx;
-	/* Irq debug Info */
-	struct msm_vfe_irq_dump vfe_irq_dump;
-	struct msm_vfe_tasklet tasklets[MAX_VFE + 1];
 };
 
 struct msm_vfe_common_subdev {
@@ -760,11 +643,6 @@ struct msm_vfe_common_subdev {
 	struct msm_vfe_common_dev_data *common_data;
 };
 
-struct isp_proc {
-	uint32_t  kernel_sofid;
-	uint32_t  vfeid;
-};
-
 struct vfe_device {
 	/* Driver private data */
 	struct platform_device *pdev;
@@ -774,38 +652,37 @@ struct vfe_device {
 
 	/* Resource info */
 	struct resource *vfe_irq;
+	struct resource *vfe_mem;
+	struct resource *vfe_vbif_mem;
+	struct resource *vfe_io;
+	struct resource *vfe_vbif_io;
 	void __iomem *vfe_base;
-	uint32_t vfe_base_size;
 	void __iomem *vfe_vbif_base;
-	uint32_t vfe_vbif_base_size;
 	struct device *iommu_ctx[MAX_IOMMU_CTX];
-	struct msm_cam_regulator *regulator_info;
-	uint32_t vfe_num_regulators;
+	struct regulator *fs_vfe;
+	struct regulator *fs_camss;
+	struct regulator *fs_mmagic_camss;
 	struct clk **vfe_clk;
-	struct msm_cam_clk_info *vfe_clk_info;
-	uint32_t **vfe_clk_rates;
-	size_t num_clk;
-	size_t num_rates;
-	struct clk **hvx_clk;
-	struct msm_cam_clk_info *hvx_clk_info;
-	size_t num_hvx_clk;
-	size_t num_norm_clk;
-	bool hvx_clk_state;
-	enum cam_ahb_clk_vote ahb_vote;
-	enum cam_ahb_clk_vote user_requested_ahb_vote;
-	struct cx_ipeak_client *vfe_cx_ipeak;
+	uint32_t num_clk;
 
 	/* Sync variables*/
 	struct completion reset_complete;
 	struct completion halt_complete;
+	struct completion stream_config_complete;
+	struct completion stats_config_complete;
 	struct mutex realtime_mutex;
 	struct mutex core_mutex;
 	spinlock_t shared_data_lock;
 	spinlock_t reg_update_lock;
-	spinlock_t completion_lock;
+	spinlock_t tasklet_lock;
 
 	/* Tasklet info */
 	atomic_t irq_cnt;
+	uint8_t taskletq_idx;
+	struct list_head tasklet_q;
+	struct tasklet_struct vfe_tasklet;
+	struct msm_vfe_tasklet_queue_cmd
+		tasklet_queue_cmd[MSM_VFE_TASKLETQ_SIZE];
 
 	/* Data structures */
 	struct msm_vfe_hardware_info *hw_info;
@@ -814,12 +691,13 @@ struct vfe_device {
 	struct msm_vfe_error_info error_info;
 	struct msm_vfe_fetch_engine_info fetch_engine_info;
 	enum msm_vfe_hvx_streaming_cmd hvx_cmd;
-	uint8_t cur_hvx_state;
 
 	/* State variables */
 	uint32_t vfe_hw_version;
+	int vfe_clk_idx;
 	uint32_t vfe_open_cnt;
 	uint8_t vt_enable;
+	uint8_t ignore_error;
 	uint32_t vfe_ub_policy;
 	uint8_t reset_pending;
 	uint8_t reg_update_requested;
@@ -827,28 +705,19 @@ struct vfe_device {
 	uint32_t is_split;
 	uint32_t dual_vfe_enable;
 	unsigned long page_fault_addr;
-	uint32_t vfe_hw_limit;
 
 	/* Debug variables */
 	int dump_reg;
 	struct msm_isp_statistics *stats;
 	uint64_t msm_isp_last_overflow_ab;
 	uint64_t msm_isp_last_overflow_ib;
+	uint64_t msm_isp_vfe_clk_rate;
 	struct msm_isp_ub_info *ub_info;
-	int32_t isp_sof_debug;
-	int32_t isp_raw0_debug;
-	int32_t isp_raw1_debug;
-	int32_t isp_raw2_debug;
-
-	/* irq info */
-	uint32_t irq0_mask;
-	uint32_t irq1_mask;
-	uint32_t bus_err_ign_mask;
-	uint32_t recovery_irq0_mask;
-	uint32_t recovery_irq1_mask;
-	/* total bandwidth per vfe */
-	uint64_t total_bandwidth;
-	struct isp_proc *isp_page;
+	uint32_t isp_sof_debug;
+	uint32_t isp_raw0_debug;
+	uint32_t isp_raw1_debug;
+	uint32_t isp_raw2_debug;
+	uint8_t is_camif_raw_crop_supported;
 };
 
 struct vfe_parent_device {
@@ -858,6 +727,7 @@ struct vfe_parent_device {
 	struct platform_device *child_list[VFE_SD_HW_MAX];
 	struct msm_vfe_common_subdev *common_sd;
 };
+
 int vfe_hw_probe(struct platform_device *pdev);
-void msm_isp_update_last_overflow_ab_ib(struct vfe_device *vfe_dev);
+
 #endif
