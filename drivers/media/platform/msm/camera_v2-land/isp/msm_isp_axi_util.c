@@ -1699,7 +1699,7 @@ static int msm_isp_process_done_buf(struct vfe_device *vfe_dev,
 	struct msm_vfe_axi_stream *stream_info, struct msm_isp_buffer *buf,
 	struct timeval *time_stamp, uint32_t frame_id)
 {
-	int rc, ret;
+	int rc = 0, ret = 0;
 	unsigned long flags;
 	struct msm_isp_event_data buf_event;
 	uint32_t stream_idx = HANDLE_TO_IDX(stream_info->stream_handle);
@@ -2042,24 +2042,44 @@ static int msm_isp_init_stream_ping_pong_reg(
 	if ((vfe_dev->is_split && vfe_dev->pdev->id == 1 &&
 		stream_info->stream_src < RDI_INTF_0) ||
 		!vfe_dev->is_split || stream_info->stream_src >= RDI_INTF_0) {
-		/* Set address for both PING & PONG register */
-		rc = msm_isp_cfg_ping_pong_address(vfe_dev,
-			stream_info, VFE_PING_FLAG, 0);
-		if (rc < 0) {
-			pr_err("%s: No free buffer for ping\n",
-				   __func__);
-			return rc;
-		}
+		if (stream_info->stream_type == BURST_STREAM) {
+			/* Set address for both PING & PONG register */
+			rc = msm_isp_cfg_ping_pong_address(vfe_dev,
+				stream_info, VFE_PING_FLAG, 0);
+			if (rc < 0) {
+				pr_err("%s: No free buffer for ping\n",
+					   __func__);
+				return rc;
+			}
 
-		if (stream_info->stream_type != BURST_STREAM ||
-			stream_info->runtime_num_burst_capture > 1)
+			if (stream_info->runtime_num_burst_capture > 1)
+				rc = msm_isp_cfg_ping_pong_address(vfe_dev,
+					stream_info, VFE_PONG_FLAG, 0);
+
+			if (rc < 0) {
+				pr_err("%s: No free buffer for pong\n",
+					__func__);
+				return rc;
+			}
+		} else if (stream_info->stream_type == CONTINUOUS_STREAM) {
+			rc = msm_isp_cfg_ping_pong_address(vfe_dev,
+				stream_info, VFE_PING_FLAG, 0);
+			if (rc < 0 && rc != ENOMEM) {
+				pr_err("%s: config error for ping\n",
+				__func__);
+				return rc;
+			}
 			rc = msm_isp_cfg_ping_pong_address(vfe_dev,
 				stream_info, VFE_PONG_FLAG, 0);
-
-		if (rc < 0) {
-			pr_err("%s: No free buffer for pong\n",
+			if (rc < 0 && rc != ENOMEM) {
+				pr_err("%s: config error for pong\n",
 				__func__);
-			return rc;
+				return rc;
+			}
+		} else {
+			rc = -1;
+			pr_err("%s:%d failed invalid stream type %d", __func__,
+				__LINE__, stream_info->stream_type);
 		}
 	}
 
@@ -2394,7 +2414,7 @@ static int msm_isp_update_dual_HW_ms_info_at_stop(
 static int msm_isp_update_dual_HW_axi(struct vfe_device *vfe_dev,
 			struct msm_vfe_axi_stream *stream_info)
 {
-	int rc, vfe_id;
+	int rc = 0, vfe_id;
 	uint32_t stream_idx = HANDLE_TO_IDX(stream_info->stream_handle);
 	struct dual_vfe_resource *dual_vfe_res = NULL;
 
