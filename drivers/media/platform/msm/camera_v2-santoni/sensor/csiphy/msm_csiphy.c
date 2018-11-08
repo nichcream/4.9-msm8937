@@ -10,6 +10,8 @@
  * GNU General Public License for more details.
  */
 
+#define __NEED_MEDIA_LEGACY_API
+
 #include <linux/delay.h>
 #include <linux/clk.h>
 #include <linux/io.h>
@@ -1433,7 +1435,7 @@ static int csiphy_probe(struct platform_device *pdev)
 	snprintf(new_csiphy_dev->msm_sd.sd.name,
 		ARRAY_SIZE(new_csiphy_dev->msm_sd.sd.name), "msm_csiphy");
 	media_entity_init(&new_csiphy_dev->msm_sd.sd.entity, 0, NULL, 0);
-	new_csiphy_dev->msm_sd.sd.entity.type = MEDIA_ENT_T_V4L2_SUBDEV;
+	new_csiphy_dev->msm_sd.sd.entity.function = MEDIA_ENT_T_V4L2_SUBDEV;
 	new_csiphy_dev->msm_sd.sd.entity.group_id = MSM_CAMERA_SUBDEV_CSIPHY;
 	new_csiphy_dev->msm_sd.close_seq = MSM_SD_CLOSE_2ND_CATEGORY | 0x4;
 	msm_sd_register(&new_csiphy_dev->msm_sd);

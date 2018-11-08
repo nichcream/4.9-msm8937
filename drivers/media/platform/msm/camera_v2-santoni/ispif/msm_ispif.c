@@ -10,6 +10,8 @@
  * GNU General Public License for more details.
  */
 
+#define __NEED_MEDIA_LEGACY_API
+
 #include <linux/delay.h>
 #include <linux/io.h>
 #include <linux/module.h>
@@ -1682,7 +1684,7 @@ static int ispif_probe(struct platform_device *pdev)
 	platform_set_drvdata(pdev, &ispif->msm_sd.sd);
 
 	media_entity_init(&ispif->msm_sd.sd.entity, 0, NULL, 0);
-	ispif->msm_sd.sd.entity.type = MEDIA_ENT_T_V4L2_SUBDEV;
+	ispif->msm_sd.sd.entity.function = MEDIA_ENT_T_V4L2_SUBDEV;
 	ispif->msm_sd.sd.entity.group_id = MSM_CAMERA_SUBDEV_ISPIF;
 	ispif->msm_sd.sd.entity.name = pdev->name;
 	ispif->msm_sd.close_seq = MSM_SD_CLOSE_1ST_CATEGORY | 0x1;
