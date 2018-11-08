@@ -590,7 +590,7 @@ dtb-$(CONFIG_ARCH_SDM632) += sdm632-rumi.dtb \
 	sdm632-pm8004-qrd-sku4.dtb \
 	sdm632-pm8004-qrd.dtb
 
-dtb-$(CONFIG_ARCH_SDM439) += sdm439-mtp.dtb \
+dtb-n += sdm439-mtp.dtb \
 	sdm439-cdp.dtb \
 	sdm439-qrd.dtb \
 	sda439-mtp.dtb \
