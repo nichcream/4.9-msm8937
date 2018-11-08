@@ -4,6 +4,7 @@
 #include <linux/videodev2.h>
 #include <linux/types.h>
 #include <linux/ioctl.h>
+#include <linux/media.h>
 
 #define MSM_CAM_LOGSYNC_FILE_NAME "logsync"
 #define MSM_CAM_LOGSYNC_FILE_BASEDIR "camera"
