@@ -16,6 +16,7 @@
 #include <linux/videodev2.h>
 #include <linux/types.h>
 #include <linux/ioctl.h>
+#include <linux/media.h>
 
 #include <linux/msm_ion.h>
 

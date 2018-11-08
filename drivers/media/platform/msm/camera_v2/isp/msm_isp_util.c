@@ -75,6 +75,7 @@ static struct msm_bus_paths msm_isp_bus_client_config[] = {
 
 static struct msm_bus_scale_pdata msm_isp_bus_client_pdata = {
 	msm_isp_bus_client_config,
+	NULL,
 	ARRAY_SIZE(msm_isp_bus_client_config),
 	.name = "msm_camera_isp",
 };
@@ -257,17 +258,17 @@ uint32_t msm_isp_get_framedrop_period(
 int msm_isp_get_clk_info(struct vfe_device *vfe_dev,
 	struct platform_device *pdev, struct msm_cam_clk_info *vfe_clk_info)
 {
-	uint32_t count;
-	int i, rc;
+	int i, count, rc;
 	uint32_t rates[VFE_CLK_INFO_MAX];
 
 	struct device_node *of_node;
+
 	of_node = pdev->dev.of_node;
 
 	count = of_property_count_strings(of_node, "clock-names");
 
 	ISP_DBG("count = %d\n", count);
-	if (count == 0) {
+	if (count <= 0) {
 		pr_err("no clocks found in device tree, count=%d", count);
 		return 0;
 	}

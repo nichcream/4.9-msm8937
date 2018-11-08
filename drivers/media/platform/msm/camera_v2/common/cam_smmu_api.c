@@ -15,11 +15,9 @@
 #include <linux/dma-buf.h>
 #include <asm/dma-iommu.h>
 #include <linux/dma-direction.h>
-#include <linux/dma-attrs.h>
 #include <linux/of_platform.h>
 #include <linux/iommu.h>
 #include <linux/slab.h>
-#include <linux/qcom_iommu.h>
 #include <linux/dma-mapping.h>
 #include <linux/msm_dma_iommu_mapping.h>
 #include <linux/workqueue.h>
@@ -1385,7 +1383,6 @@ static int cam_smmu_setup_cb(struct cam_context_bank_info *cb,
 	struct device *dev)
 {
 	int rc = 0;
-	int disable_htw = 1;
 
 	if (!cb || !dev) {
 		pr_err("Error: invalid input params\n");
@@ -1415,7 +1412,7 @@ static int cam_smmu_setup_cb(struct cam_context_bank_info *cb,
 	}
 
 	/* create a virtual mapping */
-	cb->mapping = arm_iommu_create_mapping(msm_iommu_get_bus(dev),
+	cb->mapping = arm_iommu_create_mapping(&platform_bus_type,
 		cb->va_start, cb->va_len);
 	if (IS_ERR(cb->mapping)) {
 		pr_err("Error: create mapping Failed\n");
@@ -1423,21 +1420,7 @@ static int cam_smmu_setup_cb(struct cam_context_bank_info *cb,
 		goto end;
 	}
 
-	/*
-	 * Set the domain attributes
-	 * disable L2 redirect since it decreases
-	 * performance
-	 */
-	if (iommu_domain_set_attr(cb->mapping->domain,
-		DOMAIN_ATTR_COHERENT_HTW_DISABLE,
-		&disable_htw)) {
-		pr_err("Error: couldn't disable coherent HTW\n");
-		rc = -ENODEV;
-		goto err_set_attr;
-	}
 	return 0;
-err_set_attr:
-	arm_iommu_release_mapping(cb->mapping);
 end:
 	return rc;
 }
@@ -1531,14 +1514,8 @@ static int cam_populate_smmu_context_banks(struct device *dev,
 
 	/* set up the iommu mapping for the  context bank */
 	if (type == CAM_QSMMU) {
-		ctx = msm_iommu_get_ctx(cb->name);
-		if (IS_ERR_OR_NULL(ctx)) {
-			rc = PTR_ERR(ctx);
-			pr_err("Invalid pointer of ctx : %s rc = %d\n",
-				 cb->name, rc);
-			return -EINVAL;
-		}
-		CDBG("getting QSMMU ctx : %s\n", cb->name);
+		pr_err("Error: QSMMU ctx not supported for: %s\n", cb->name);
+		return -EINVAL;
 	} else {
 		ctx = dev;
 		CDBG("getting Arm SMMU ctx : %s\n", cb->name);
