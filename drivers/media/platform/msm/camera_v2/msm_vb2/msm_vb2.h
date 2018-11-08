@@ -1,4 +1,4 @@
-/* Copyright (c) 2012-2018, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2012-2014, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -17,6 +17,7 @@
 #include <linux/i2c.h>
 #include <linux/videodev2.h>
 #include <linux/pm_qos.h>
+#include <linux/wakelock.h>
 #include <linux/msm_ion.h>
 #include <linux/iommu.h>
 #include <media/v4l2-dev.h>
@@ -37,7 +38,7 @@ struct msm_vb2_buffer {
 	 * because both v4l2 frameworks and driver directly
 	 * cast msm_vb2_buffer to a vb2_buf.
 	 */
-	struct vb2_v4l2_buffer vb2_v4l2_buf;
+	struct vb2_buffer vb2_buf;
 	struct list_head list;
 	int in_freeq;
 };
@@ -46,15 +47,14 @@ struct msm_vb2_private_data {
 	void *vaddr;
 	unsigned long size;
 	/* Offset of the plane inside the buffer */
-	struct device *alloc_ctx;
+	void *alloc_ctx;
 };
 
 struct msm_stream {
 	struct list_head list;
 
 	/* stream index per session, same
-	 * as stream_id but set through s_parm
-	 */
+	 * as stream_id but set through s_parm */
 	unsigned int stream_id;
 	/* vb2 buffer handling */
 	struct vb2_queue *vb2_q;
@@ -65,8 +65,5 @@ struct msm_stream {
 struct vb2_ops *msm_vb2_get_q_ops(void);
 struct vb2_mem_ops *msm_vb2_get_q_mem_ops(void);
 int msm_vb2_request_cb(struct msm_sd_req_vb2_q *req_sd);
-long msm_vb2_return_buf_by_idx(int session_id, unsigned int stream_id,
-	uint32_t index);
-int msm_vb2_get_stream_state(struct msm_stream *stream);
 
 #endif /*_MSM_VB_H */
