@@ -13,6 +13,8 @@
 #ifndef __MSM_BUF_GENERIC_MNGR_H__
 #define __MSM_BUF_GENERIC_MNGR_H__
 
+#define __NEED_MEDIA_LEGACY_API
+
 #include <linux/io.h>
 #include <linux/of.h>
 #include <linux/module.h>
@@ -26,7 +28,7 @@
 
 struct msm_get_bufs {
 	struct list_head entry;
-	struct vb2_buffer *vb2_buf;
+	struct vb2_v4l2_buffer *vb2_v4l2_buf;
 	uint32_t session_id;
 	uint32_t stream_id;
 	uint32_t index;

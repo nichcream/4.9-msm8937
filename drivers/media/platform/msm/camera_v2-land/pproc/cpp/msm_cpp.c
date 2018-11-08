@@ -12,6 +12,7 @@
 
 #define pr_fmt(fmt) "MSM-CPP %s:%d " fmt, __func__, __LINE__
 
+#define __NEED_MEDIA_LEGACY_API
 
 #include <linux/delay.h>
 #include <linux/clk.h>
@@ -170,6 +171,7 @@ static struct msm_bus_paths msm_cpp_bus_client_config[] = {
 
 static struct msm_bus_scale_pdata msm_cpp_bus_scale_data = {
 	msm_cpp_bus_client_config,
+	NULL,
 	ARRAY_SIZE(msm_cpp_bus_client_config),
 	.name = "msm_camera_cpp",
 };
@@ -177,7 +179,7 @@ static struct msm_bus_scale_pdata msm_cpp_bus_scale_data = {
 #define msm_dequeue(queue, member, pop_dir) ({	   \
 	unsigned long flags;		  \
 	struct msm_device_queue *__q = (queue);	 \
-	struct msm_queue_cmd *qcmd = 0;	   \
+	struct msm_queue_cmd *qcmd = NULL;	   \
 	spin_lock_irqsave(&__q->lock, flags);	 \
 	if (!list_empty(&__q->list)) {		\
 		__q->len--;		 \
@@ -4360,7 +4362,7 @@ static int cpp_probe(struct platform_device *pdev)
 		goto cpp_probe_init_error;
 
 	media_entity_init(&cpp_dev->msm_sd.sd.entity, 0, NULL, 0);
-	cpp_dev->msm_sd.sd.entity.type = MEDIA_ENT_T_V4L2_SUBDEV;
+	cpp_dev->msm_sd.sd.entity.function = MEDIA_ENT_T_V4L2_SUBDEV;
 	cpp_dev->msm_sd.sd.entity.group_id = MSM_CAMERA_SUBDEV_CPP;
 	cpp_dev->msm_sd.sd.entity.name = pdev->name;
 	cpp_dev->msm_sd.close_seq = MSM_SD_CLOSE_3RD_CATEGORY;

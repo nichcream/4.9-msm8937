@@ -12,6 +12,8 @@
 
 #define pr_fmt(fmt) "%s:%d " fmt, __func__, __LINE__
 
+#define __NEED_MEDIA_LEGACY_API
+
 #include <linux/module.h>
 #include "msm_sd.h"
 #include "msm_ois.h"
@@ -519,7 +521,7 @@ static int32_t msm_ois_i2c_probe(struct i2c_client *client,
 	ois_ctrl_t->msm_sd.sd.internal_ops = &msm_ois_internal_ops;
 	ois_ctrl_t->msm_sd.sd.flags |= V4L2_SUBDEV_FL_HAS_DEVNODE;
 	media_entity_init(&ois_ctrl_t->msm_sd.sd.entity, 0, NULL, 0);
-	ois_ctrl_t->msm_sd.sd.entity.type = MEDIA_ENT_T_V4L2_SUBDEV;
+	ois_ctrl_t->msm_sd.sd.entity.function = MEDIA_ENT_T_V4L2_SUBDEV;
 	ois_ctrl_t->msm_sd.sd.entity.group_id = MSM_CAMERA_SUBDEV_OIS;
 	ois_ctrl_t->msm_sd.close_seq = MSM_SD_CLOSE_2ND_CATEGORY | 0x2;
 	msm_sd_register(&ois_ctrl_t->msm_sd);
@@ -690,7 +692,7 @@ static int32_t msm_ois_platform_probe(struct platform_device *pdev)
 	snprintf(msm_ois_t->msm_sd.sd.name,
 		ARRAY_SIZE(msm_ois_t->msm_sd.sd.name), "msm_ois");
 	media_entity_init(&msm_ois_t->msm_sd.sd.entity, 0, NULL, 0);
-	msm_ois_t->msm_sd.sd.entity.type = MEDIA_ENT_T_V4L2_SUBDEV;
+	msm_ois_t->msm_sd.sd.entity.function = MEDIA_ENT_T_V4L2_SUBDEV;
 	msm_ois_t->msm_sd.sd.entity.group_id = MSM_CAMERA_SUBDEV_OIS;
 	msm_ois_t->msm_sd.close_seq = MSM_SD_CLOSE_2ND_CATEGORY | 0x2;
 	msm_sd_register(&msm_ois_t->msm_sd);
