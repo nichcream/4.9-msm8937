@@ -452,11 +452,20 @@ static void wcd_correct_swch_plug(struct work_struct *work)
 	int rc, spl_hs_count = 0;
 	int cross_conn;
 	int try = 0;
+	bool detection_type;
 
 	pr_debug("%s: enter\n", __func__);
 
 	mbhc = container_of(work, struct wcd_mbhc, correct_plug_swch);
 	codec = mbhc->codec;
+
+/*
+	detection_type = (snd_soc_read(codec,
+				MSM89XX_PMIC_ANALOG_MBHC_DET_CTL_1)) & 0x20;
+
+	if (detection_type)
+		return;
+*/
 
 	/*
 	 * Enable micbias/pullup for detection in correct work.
