@@ -452,7 +452,6 @@ static void wcd_correct_swch_plug(struct work_struct *work)
 	int rc, spl_hs_count = 0;
 	int cross_conn;
 	int try = 0;
-	bool detection_type;
 
 	pr_debug("%s: enter\n", __func__);
 
