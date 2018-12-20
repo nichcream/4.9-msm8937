@@ -1,6 +1,3 @@
-#ifdef CONFIG_MACH_XIAOMI_LAND
-#include "msm_camsensor_sdk-land.h"
-#else
 #ifndef __UAPI_LINUX_MSM_CAMSENSOR_SDK_H
 #define __UAPI_LINUX_MSM_CAMSENSOR_SDK_H
 
@@ -21,7 +18,6 @@
 #define CSI_DECODE_8BIT         1
 #define CSI_DECODE_10BIT        2
 #define CSI_DECODE_12BIT        3
-#define CSI_DECODE_DPCM_10_6_10 4
 #define CSI_DECODE_DPCM_10_8_10 5
 #define MAX_CID                 16
 #define I2C_SEQ_REG_DATA_MAX    1024
@@ -50,10 +46,6 @@
 
 #define MSM_EEPROM_MEMORY_MAP_MAX_SIZE  80
 #define MSM_EEPROM_MAX_MEM_MAP_CNT      8
-
-#define MSM_SENSOR_BYPASS_VIDEO_NODE    1
-
-#define SENSOR_PROBE_WRITE
 
 enum msm_sensor_camera_id_t {
 	CAMERA_0,
@@ -90,10 +82,8 @@ enum msm_camera_i2c_reg_addr_type {
 	MSM_CAMERA_I2C_BYTE_ADDR = 1,
 	MSM_CAMERA_I2C_WORD_ADDR,
 	MSM_CAMERA_I2C_3B_ADDR,
-	MSM_CAMERA_I2C_DWORD_ADDR,
 	MSM_CAMERA_I2C_ADDR_TYPE_MAX,
 };
-#define MSM_CAMERA_I2C_DWORD_ADDR MSM_CAMERA_I2C_DWORD_ADDR
 
 enum msm_camera_i2c_data_type {
 	MSM_CAMERA_I2C_BYTE_DATA = 1,
@@ -120,19 +110,8 @@ enum msm_sensor_power_seq_gpio_t {
 	SENSOR_GPIO_FL_RESET,
 	SENSOR_GPIO_CUSTOM1,
 	SENSOR_GPIO_CUSTOM2,
-	SENSOR_GPIO_CUSTOM3,
 	SENSOR_GPIO_MAX,
 };
-#define SENSOR_GPIO_CUSTOM3 SENSOR_GPIO_CUSTOM3
-
-enum msm_ir_cut_filter_gpio_t {
-	IR_CUT_FILTER_GPIO_P = 0,
-	IR_CUT_FILTER_GPIO_M,
-	IR_CUT_FILTER_GPIO_MAX,
-};
-#define IR_CUT_FILTER_GPIO_P IR_CUT_FILTER_GPIO_P
-#define IR_CUT_FILTER_GPIO_M IR_CUT_FILTER_GPIO_M
-#define R_CUT_FILTER_GPIO_MAX IR_CUT_FILTER_GPIO_MAX
 
 enum msm_camera_vreg_name_t {
 	CAM_VDIG,
@@ -202,35 +181,6 @@ enum msm_flash_cfg_type_t {
 	CFG_FLASH_HIGH,
 };
 
-enum msm_ir_led_cfg_type_t {
-	CFG_IR_LED_INIT = 0,
-	CFG_IR_LED_RELEASE,
-	CFG_IR_LED_OFF,
-	CFG_IR_LED_ON,
-};
-#define CFG_IR_LED_INIT CFG_IR_LED_INIT
-#define CFG_IR_LED_RELEASE CFG_IR_LED_RELEASE
-#define CFG_IR_LED_OFF CFG_IR_LED_OFF
-#define CFG_IR_LED_ON CFG_IR_LED_ON
-
-enum msm_laser_led_cfg_type_t {
-	CFG_LASER_LED_INIT,
-	CFG_LASER_LED_CONTROL,
-};
-#define CFG_LASER_LED_INIT CFG_LASER_LED_INIT
-#define CFG_LASER_LED_CONTROL CFG_LASER_LED_CONTROL
-
-enum msm_ir_cut_cfg_type_t {
-	CFG_IR_CUT_INIT = 0,
-	CFG_IR_CUT_RELEASE,
-	CFG_IR_CUT_OFF,
-	CFG_IR_CUT_ON,
-};
-#define CFG_IR_CUT_INIT CFG_IR_CUT_INIT
-#define CFG_IR_CUT_RELEASE CFG_IR_CUT_RELEASE
-#define CFG_IR_CUT_OFF CFG_IR_CUT_OFF
-#define CFG_IR_CUT_ON CFG_IR_CUT_ON
-
 enum msm_sensor_output_format_t {
 	MSM_SENSOR_BAYER,
 	MSM_SENSOR_YCBCR,
@@ -247,10 +197,10 @@ struct msm_sensor_power_setting {
 
 struct msm_sensor_power_setting_array {
 	struct msm_sensor_power_setting  power_setting_a[MAX_POWER_CONFIG];
-	struct msm_sensor_power_setting  *power_setting;
+	struct msm_sensor_power_setting *power_setting;
 	unsigned short size;
 	struct msm_sensor_power_setting  power_down_setting_a[MAX_POWER_CONFIG];
-	struct msm_sensor_power_setting  *power_down_setting;
+	struct msm_sensor_power_setting *power_down_setting;
 	unsigned short size_down;
 };
 
@@ -297,19 +247,10 @@ struct msm_sensor_init_params {
 	unsigned int            sensor_mount_angle;
 };
 
-struct msm_camera_i2c_reg_setting {
-	struct msm_camera_i2c_reg_array *reg_setting;
-	unsigned short size;
-	enum msm_camera_i2c_reg_addr_type addr_type;
-	enum msm_camera_i2c_data_type data_type;
-	unsigned short delay;
-};
-
 struct msm_sensor_id_info_t {
 	unsigned short sensor_id_reg_addr;
 	unsigned short sensor_id;
 	unsigned short sensor_id_mask;
-	struct msm_camera_i2c_reg_setting setting;
 };
 
 struct msm_camera_sensor_slave_info {
@@ -327,13 +268,20 @@ struct msm_camera_sensor_slave_info {
 	unsigned char  is_init_params_valid;
 	struct msm_sensor_init_params sensor_init_params;
 	enum msm_sensor_output_format_t output_format;
-	uint8_t bypass_video_node_creation;
 };
 
 struct msm_camera_i2c_reg_array {
 	unsigned short reg_addr;
 	unsigned short reg_data;
 	unsigned int delay;
+};
+
+struct msm_camera_i2c_reg_setting {
+	struct msm_camera_i2c_reg_array *reg_setting;
+	unsigned short size;
+	enum msm_camera_i2c_reg_addr_type addr_type;
+	enum msm_camera_i2c_data_type data_type;
+	unsigned short delay;
 };
 
 struct msm_camera_csid_vc_cfg {
@@ -373,7 +321,6 @@ struct msm_camera_csiphy_params {
 	unsigned char csid_core;
 	unsigned int csiphy_clk;
 	unsigned char csi_3phase;
-	uint64_t data_rate;
 };
 
 struct msm_camera_i2c_seq_reg_array {
@@ -410,8 +357,8 @@ struct damping_params_t {
 
 struct region_params_t {
 	/* [0] = ForwardDirection Macro boundary
-	 *  [1] = ReverseDirection Inf boundary
-	 */
+	   [1] = ReverseDirection Inf boundary
+	*/
 	unsigned short step_bound[2];
 	unsigned short code_per_step;
 	/* qvalue for converting float type numbers to integer format */
@@ -420,9 +367,9 @@ struct region_params_t {
 
 struct reg_settings_t {
 	unsigned short reg_addr;
-	enum msm_camera_i2c_reg_addr_type addr_type;
+	enum msm_actuator_addr_type addr_type;
 	unsigned short reg_data;
-	enum msm_camera_i2c_data_type data_type;
+	enum msm_actuator_data_type data_type;
 	enum msm_actuator_i2c_operation i2c_operation;
 	unsigned int delay;
 };
@@ -436,5 +383,3 @@ struct msm_camera_i2c_reg_setting_array {
 };
 
 #endif
-#endif /* CONFIG_MACH_XIAOMI_LAND */
-
