@@ -1,7 +1,5 @@
-#ifdef CONFIG_MACH_XIAOMI_MSM8937
 #ifdef CONFIG_MACH_XIAOMI_LAND
 #include "msm_cam_sensor-land.h"
-#endif /* CONFIG_MACH_XIAOMI_LAND */
 #else
 #ifndef __LINUX_MSM_CAM_SENSOR_H
 #define __LINUX_MSM_CAM_SENSOR_H
@@ -304,4 +302,4 @@ struct msm_flash_cfg_data_t32 {
 #endif
 
 #endif
-#endif /* CONFIG_MACH_XIAOMI_MSM8937 */
+#endif
