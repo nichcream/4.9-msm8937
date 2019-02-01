@@ -250,6 +250,10 @@
 	hw-config = "single_dsi";
 };
 
+&mdss_fb0 {
+	/delete-node/ qcom,cont-splash-memory;
+};
+
 &mdss_dsi0 {
 	lab-supply = <&lab_regulator>;
 	ibb-supply = <&ibb_regulator>;
@@ -258,6 +262,7 @@
 	qcom,dsi-pref-sub-pan = <&dsi_nt35521s_ebbg_720_video>;
 	qcom,dsi-pref-sub1-pan = <&dsi_ili9881c_tianma_720p_video>;
 	pinctrl-names = "mdss_default", "mdss_sleep";
+	qcom,display-id = "primary";
 	pinctrl-0 = <&mdss_dsi_active &mdss_te_active>;
 	pinctrl-1 = <&mdss_dsi_suspend &mdss_te_suspend>;
 
@@ -326,8 +331,8 @@
 
 			lab_regulator: qcom,lab@de00 {
 				/delete-property/
-					qcom,qpnp-ibb-use-default-voltage;
-				qcom,qpnp-ibb-init-lcd-voltage = <5000000>;
+					qcom,qpnp-lab-use-default-voltage;
+				qcom,qpnp-lab-init-lcd-voltage = <5000000>;
 			};
 		};
 	};

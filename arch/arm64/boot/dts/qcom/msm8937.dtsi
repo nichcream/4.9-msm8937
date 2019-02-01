@@ -1051,9 +1051,9 @@
 			reg = <0x10 8>;
 		};
 
-		dload_type@18 {
+		dload_type@1c{
 			compatible = "qcom,msm-imem-dload-type";
-			reg = <0x18 4>;
+			reg = <0x1c 4>;
 		};
 
 		restart_reason@65c {
@@ -1471,7 +1471,7 @@
 		status = "disabled";
 	};
 
-	qcom_seecom: qseecom@85b00000 {
+	qcom_seecom: qseecom@84A00000 {
 		compatible = "qcom,qseecom";
 		reg = <0x85b00000 0x800000>;
 		reg-names = "secapp-region";
