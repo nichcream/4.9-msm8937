@@ -106,25 +106,3 @@ int msm_tz_smmu_atos_end(struct device *dev, int cb_num)
 {
 	return __msm_tz_smmu_atos(dev, cb_num, TZ_SMMU_ATOS_END);
 }
-
-int msm_tz_set_cb_format(enum tz_smmu_device_id sec_id, int cbndx)
-{
-	struct scm_desc desc = {0};
-	int ret = 0;
-
-	desc.args[0] = sec_id;
-	desc.args[1] = cbndx;
-	desc.args[2] = 1;	/* Enable */
-	desc.arginfo = SCM_ARGS(3, SCM_VAL, SCM_VAL, SCM_VAL);
-
-	ret = scm_call2(SCM_SIP_FNID(SCM_SVC_SMMU_PROGRAM,
-			SMMU_CHANGE_PAGETABLE_FORMAT), &desc);
-
-	if (ret) {
-		WARN(1, "Format change failed for CB %d with ret %d\n",
-		     cbndx, ret);
-		return ret;
-	}
-
-	return 0;
-}

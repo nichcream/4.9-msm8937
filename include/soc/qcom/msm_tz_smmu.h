@@ -53,7 +53,11 @@ enum tz_smmu_device_id {
 int msm_tz_smmu_atos_start(struct device *dev, int cb_num);
 int msm_tz_smmu_atos_end(struct device *dev, int cb_num);
 enum tz_smmu_device_id msm_dev_to_device_id(struct device *dev);
-int msm_tz_set_cb_format(enum tz_smmu_device_id sec_id, int cbndx);
+static inline int msm_tz_set_cb_format(enum tz_smmu_device_id sec_id,
+                                        int cbndx)
+{
+        return 0;
+}
 int msm_iommu_sec_pgtbl_init(void);
 int register_iommu_sec_ptbl(void);
 bool arm_smmu_skip_write(void __iomem *addr);
