@@ -60,20 +60,6 @@ static inline int msm_tz_set_cb_format(enum tz_smmu_device_id sec_id,
 }
 int msm_iommu_sec_pgtbl_init(void);
 int register_iommu_sec_ptbl(void);
-bool arm_smmu_skip_write(void __iomem *addr);
-
-/* Donot write to smmu global space with CONFIG_MSM_TZ_SMMU */
-#undef writel_relaxed
-#undef writeq_relaxed
-#define writel_relaxed(v, c)	do {					\
-	if (!arm_smmu_skip_write(c))					\
-		((void)__raw_writel((__force u32)cpu_to_le32(v), (c)));	\
-	} while (0)
-
-#define writeq_relaxed(v, c) do {					\
-	if (!arm_smmu_skip_write(c))					\
-		((void)__raw_writeq((__force u64)cpu_to_le64(v), (c)));	\
-	} while (0)
 #else
 
 static inline int msm_tz_smmu_atos_start(struct device *dev, int cb_num)
