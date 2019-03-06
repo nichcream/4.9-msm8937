@@ -213,7 +213,6 @@ static int mdss_smmu_attach_v2(struct mdss_data_type *mdata)
 {
 	struct mdss_smmu_client *mdss_smmu;
 	int i, rc = 0;
-	struct iommu_group *grp = NULL;
 
 	for (i = 0; i < MDSS_IOMMU_MAX_DOMAIN; i++) {
 		if (!mdss_smmu_is_valid_domain_type(mdata, i))
@@ -230,12 +229,6 @@ static int mdss_smmu_attach_v2(struct mdss_data_type *mdata)
 				}
 			}
 			mdss_smmu->handoff_pending = false;
-
-			if (!mdss_smmu->dev->iommu_group) {
-				grp = iommu_group_get_for_dev(mdss_smmu->dev);
-			 	if (IS_ERR_OR_NULL(grp))
-					  return PTR_ERR(grp);
-			}
 
 			if (!mdss_smmu->domain_attached) {
 				rc = arm_iommu_attach_device(mdss_smmu->dev,
