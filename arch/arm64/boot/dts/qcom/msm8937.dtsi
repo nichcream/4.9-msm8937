@@ -1356,7 +1356,7 @@
 		qcom,msm_fastrpc_compute_cb {
 			compatible = "qcom,msm-fastrpc-legacy-compute-cb";
 			label = "adsprpc-smd";
-			iommus = <&apps_iommu 16>;
+			iommus = <&apps_smmu 16>;
 			sids = <0x8 0x9 0xa 0xb 0xc 0xd 0xe 0xf>;
 		};
 	};
