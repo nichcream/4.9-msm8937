@@ -44,6 +44,7 @@
 
 #include <linux/msm-bus.h>
 #include <linux/msm-bus-board.h>
+#include <linux/qcom_iommu.h>
 #include <linux/vmalloc.h>
 
 #include <linux/msm_dma_iommu_mapping.h>

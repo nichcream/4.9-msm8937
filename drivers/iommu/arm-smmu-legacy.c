@@ -584,11 +584,23 @@ static struct arm_smmu_master *find_smmu_master(struct arm_smmu_device *smmu,
 						struct device_node *dev_node)
 {
 	struct rb_node *node = smmu->masters.rb_node;
+	int count = 0;
 
 	while (node) {
 		struct arm_smmu_master *master;
 
 		master = container_of(node, struct arm_smmu_master, node);
+
+	        if (IS_ERR_VALUE(master))
+        	        pr_info("masters may be null. maibe err val? %d", master);
+
+
+		pr_info("node is true, count is %d", count);
+
+		count++;
+
+		if (count > 4)
+			dump_stack();
 
 		if (dev_node < master->of_node)
 			node = node->rb_left;
@@ -597,6 +609,8 @@ static struct arm_smmu_master *find_smmu_master(struct arm_smmu_device *smmu,
 		else
 			return master;
 	}
+
+	pr_info("returning null gg");
 
 	return NULL;
 }
@@ -654,6 +668,7 @@ static int insert_smmu_master(struct arm_smmu_device *smmu,
 		else if (master->of_node > this->of_node)
 			new = &((*new)->rb_right);
 		else
+			pr_info("insert_smmu_master returning -EEXIST");
 			return -EEXIST;
 	}
 
@@ -700,6 +715,8 @@ static int register_smmu_master(struct arm_smmu_device *smmu,
 
 	for (i = 0; i < master->cfg.num_streamids; ++i)
 		master->cfg.streamids[i] = entry->streamids[i];
+
+	dev_info(dev, "returning insert_smmu_master");
 
 	return insert_smmu_master(smmu, master);
 }
@@ -757,6 +774,7 @@ static int arm_smmu_parse_iommus_properties(struct arm_smmu_device *smmu)
 		}
 
 		list_for_each_entry_safe(entry, next, &iommus, list) {
+			dev_info(smmu->dev, "returning register smmu master");
 			int rc = register_smmu_master(smmu, entry);
 
 			if (rc)
@@ -784,8 +802,14 @@ static struct arm_smmu_device *find_smmu_for_device(struct device *dev)
 	spin_lock(&arm_smmu_devices_lock);
 	list_for_each_entry(smmu, &arm_smmu_devices, list) {
 		master = find_smmu_master(smmu, dev_node);
-		if (master)
+		if (master){
 			break;
+		}
+		else{
+			dev_info(dev, "master is false?");
+			if(IS_ERR_OR_NULL(master))
+				dev_err(dev, "master null");
+		}
 	}
 	spin_unlock(&arm_smmu_devices_lock);
 
@@ -3260,6 +3284,8 @@ static struct iommu_group *arm_smmu_device_group(struct device *dev)
 	struct iommu_group *group;
 	int ret;
 
+	dev_info(dev, "using arm smmu device group");
+
 	/*
 	 * We used to call pci_device_group here for dev_is_pci(dev)
 	 * devices.  However, that causes the root complex device to be
@@ -4252,6 +4278,8 @@ static int arm_smmu_device_dt_probe(struct platform_device *pdev)
 	struct rb_node *node;
 	int num_irqs, i, err;
 
+	pr_info("arm smmu dt probe called");
+
 	smmu = devm_kzalloc(dev, sizeof(*smmu), GFP_KERNEL);
 	if (!smmu) {
 		dev_err(dev, "failed to allocate arm_smmu_device\n");
@@ -4316,32 +4344,45 @@ static int arm_smmu_device_dt_probe(struct platform_device *pdev)
 	i = 0;
 
 	err = arm_smmu_parse_impl_def_registers(smmu);
-	if (err)
+	if (err){
+		dev_err(dev, "arm_smmu_parse_implf_def failed");
 		goto out;
+	}
 
 	err = arm_smmu_init_regulators(smmu);
-	if (err)
+	if (err){
+		dev_err(dev, "init_regulators failed");
 		goto out;
+	}
 
 	err = arm_smmu_init_clocks(smmu);
-	if (err)
+	if (err){
+		dev_err(dev, "init clocks failed");
 		goto out;
+	}
 
 	err = arm_smmu_init_bus_scaling(pdev, smmu);
-	if (err)
+	if (err){
+		dev_err(dev, "init bus scaling failed");
 		goto out;
+	}
 
 	parse_driver_options(smmu);
 
 	err = arm_smmu_enable_clocks(smmu);
-	if (err)
+	if (err){
+		dev_err(dev, "smmu enable clock failed");
 		goto out;
+	}
 
 	/* No probe deferral occurred! Proceed with iommu property parsing. */
 	smmu->masters = RB_ROOT;
 	err = arm_smmu_parse_iommus_properties(smmu);
-	if (err)
+	dev_info(dev, "arm_smmu_iommus_properties called");
+	if (err){
+		dev_err(dev, "arm_smmu_parse_iommus failed");
 		goto out_put_masters;
+	}
 
 	smmu->sec_id = msm_dev_to_device_id(dev);
 	err = arm_smmu_device_cfg_probe(smmu);
@@ -4523,16 +4564,21 @@ static int __init arm_smmu_init(void)
 	 * and IOMMU bus operation registration.
 	 */
 	np = of_find_matching_node(NULL, arm_smmu_of_match);
-	if (!np)
+	if (!np){
+		pr_info("not np wtf");
 		return 0;
+	}
 
 	of_node_put(np);
 
 	ret = arm_smmu_get_master_nodes();
-	if (ret)
+	if (ret){
+		pr_info("get master nodes failed");
 		return ret;
+	}
 
 	ret = platform_driver_register(&arm_smmu_driver);
+	pr_info("platform river register called");
 	if (ret) {
 		arm_smmu_free_master_nodes();
 		return ret;

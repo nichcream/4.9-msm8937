@@ -380,8 +380,10 @@ re_probe:
 
 	if (dev->pm_domain && dev->pm_domain->activate) {
 		ret = dev->pm_domain->activate(dev);
-		if (ret)
+		if (ret){
+			dev_err(dev, "pm_domain->activate failed with retval %d", ret);
 			goto probe_failed;
+		}
 	}
 
 	/*
@@ -394,12 +396,16 @@ re_probe:
 
 	if (dev->bus->probe) {
 		ret = dev->bus->probe(dev);
-		if (ret)
+		if (ret){
+			dev_err(dev, "bus->probe failed with retval %d", ret);
 			goto probe_failed;
+		}
 	} else if (drv->probe) {
 		ret = drv->probe(dev);
-		if (ret)
+		if (ret){
+			dev_err(dev, "drv->probe failed with retval %d", ret);
 			goto probe_failed;
+		}
 	}
 
 	if (test_remove) {
@@ -428,7 +434,7 @@ re_probe:
 
 	driver_bound(dev);
 	ret = 1;
-	pr_debug("bus: '%s': %s: bound device %s to driver %s\n",
+	pr_info("bus: '%s': %s: bound device %s to driver %s\n",
 		 drv->bus->name, __func__, dev_name(dev), drv->name);
 	goto done;
 

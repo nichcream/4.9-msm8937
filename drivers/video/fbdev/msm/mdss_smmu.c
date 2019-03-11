@@ -37,26 +37,16 @@
 
 #define SZ_4G 0xF0000000
 
-#ifdef CONFIG_QCOM_IOMMU
 #include <linux/qcom_iommu.h>
 static inline struct bus_type *mdss_mmu_get_bus(struct device *dev)
 {
+	dev_info(dev, "using iommu-v1");
 	return msm_iommu_get_bus(dev);
 }
 static inline struct device *mdss_mmu_get_ctx(const char *name)
 {
 	return msm_iommu_get_ctx(name);
 }
-#else
-static inline struct bus_type *mdss_mmu_get_bus(struct device *dev)
-{
-	return &platform_bus_type;
-}
-static inline struct device *mdss_mmu_get_ctx(const char *name)
-{
-	return ERR_PTR(-ENODEV);
-}
-#endif
 
 static DEFINE_MUTEX(mdp_iommu_lock);
 
@@ -213,6 +203,7 @@ static int mdss_smmu_attach_v2(struct mdss_data_type *mdata)
 {
 	struct mdss_smmu_client *mdss_smmu;
 	int i, rc = 0;
+	struct iommu_group *grp = NULL;
 
 	for (i = 0; i < MDSS_IOMMU_MAX_DOMAIN; i++) {
 		if (!mdss_smmu_is_valid_domain_type(mdata, i))
@@ -810,8 +801,8 @@ int mdss_smmu_probe(struct platform_device *pdev)
 	rc = msm_mdss_config_vreg(&pdev->dev, mp->vreg_config,
 		mp->num_vreg, true);
 	if (rc) {
-		pr_err("vreg config failed rc=%d\n", rc);
-		return rc;
+		//pr_err("vreg config failed rc=%d\n", rc);
+		//return rc;
 	}
 
 	rc = mdss_smmu_clk_register(pdev, mp);

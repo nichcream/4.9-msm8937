@@ -13,6 +13,7 @@
 
 #include <asm/dma-iommu.h>
 #include <linux/iommu.h>
+#include <linux/qcom_iommu.h>
 #include <linux/of.h>
 #include <linux/slab.h>
 #include <linux/sort.h>
@@ -26,11 +27,6 @@
 enum clock_properties {
 	CLOCK_PROP_HAS_SCALING = 1 << 0,
 };
-
-static inline struct device *msm_iommu_get_ctx(const char *ctx_name)
-{
-	return NULL;
-}
 
 static int msm_vidc_populate_legacy_context_bank(
 			struct msm_vidc_platform_resources *res);
@@ -1283,7 +1279,7 @@ static int msm_vidc_setup_context_bank(struct context_bank_info *cb,
 	}
 	cb->dev = dev;
 
-	bus = cb->dev->bus;
+	bus = msm_iommu_get_bus(cb->dev);
 	if (IS_ERR_OR_NULL(bus)) {
 		dprintk(VIDC_ERR, "%s - failed to get bus type\n", __func__);
 		rc = PTR_ERR(bus) ?: -ENODEV;
