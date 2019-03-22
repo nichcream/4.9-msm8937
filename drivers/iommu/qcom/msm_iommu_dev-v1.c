@@ -53,6 +53,80 @@ static const char *BFB_DATA_NODE_NAME = "qcom,iommu-lpae-bfb-data";
 
 extern struct iommu_access_ops iommu_access_ops_v1;
 
+struct bus_type iommu_non_sec_bus_type = {
+	.name = "msm_iommu_non_sec_bus",
+};
+
+struct bus_type *msm_iommu_non_sec_bus_type;
+
+int msm_iommu_bus_register(void)
+{
+	msm_iommu_non_sec_bus_type = &iommu_non_sec_bus_type;
+	return bus_register(msm_iommu_non_sec_bus_type);
+}
+
+void msm_access_control(void)
+{
+	int ret;
+	struct device *cb_dev;
+	struct iommu_domain *domain;
+	unsigned long start, kernel_start, kernel_end, end;
+
+	start = 0;
+	kernel_start = rounddown(__pa(_stext), PAGE_SIZE);
+	kernel_end = ALIGN(__pa(_etext), PAGE_SIZE);
+	end = 0xFFFFFFFF;
+
+	/*
+	 * If a target doesn't have the access control feature
+	 * it won't have CB and that's okay
+	 */
+	cb_dev = msm_iommu_get_ctx("access_control");
+
+	domain = iommu_domain_alloc(msm_iommu_non_sec_bus_type);
+	if (!domain) {
+		pr_err("Couldn't get domain for access control\n");
+		goto err;
+	}
+
+	/*
+	 * Map the region from start to kernel_start
+	 */
+	if (start < kernel_start) {
+		ret = iommu_map(domain, start, start, kernel_start - start,
+				IOMMU_READ | IOMMU_WRITE | IOMMU_MMIO);
+
+		if (ret) {
+			pr_err("Mapping failed for region lower than kernel\n");
+			goto free_dom;
+		}
+	}
+
+	/*
+	 * Map the region from kernel_end to end of DDR
+	 */
+	ret = iommu_map(domain, kernel_end, kernel_end, end - kernel_end + 1,
+				IOMMU_READ | IOMMU_WRITE);
+
+	if (ret) {
+		pr_err("Mapping failed for region above kernel\n");
+		goto free_dom;
+	}
+
+	ret = iommu_attach_device(domain, cb_dev);
+	if (ret) {
+		pr_err("Attach of access_control CB failed\n");
+		goto free_dom;
+	}
+
+	return;
+
+free_dom:
+	iommu_domain_free(domain);
+err:
+	BUG();
+}
+
 static void msm_iommu_add_drv(struct msm_iommu_drvdata *drv)
 {
 	mutex_lock(&iommu_list_lock);
@@ -926,6 +1000,9 @@ static int msm_iommu_ctx_probe(struct platform_device *pdev)
 
 	dev_info(&pdev->dev, "context %s using bank %d\n",
 		 ctx_drvdata->name, ctx_drvdata->num);
+
+	if (strcmp(ctx_drvdata->name, "access_control") == 0)
+		msm_access_control();
 
 	return 0;
 }

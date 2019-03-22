@@ -38,6 +38,7 @@ static inline void msm_iommu_mutex_unlock(void) { }
  * their platform devices.
  */
 struct device *msm_iommu_get_ctx(const char *ctx_name);
+int msm_iommu_bus_register(void);
 #else
 static inline struct device *msm_iommu_get_ctx(const char *ctx_name)
 {
@@ -87,11 +88,11 @@ static inline int msm_soc_version_supports_iommu_v0(void)
 }
 #endif
 
-extern struct bus_type platform_bus_type;
+extern struct bus_type *msm_iommu_non_sec_bus_type;
 static inline struct bus_type *msm_iommu_get_bus(struct device *dev)
 {
 
-	return &platform_bus_type;
+	return msm_iommu_non_sec_bus_type;
 }
 
 
