@@ -580,7 +580,6 @@ struct iommu_group *iommu_group_find(const char *name)
 	struct iommu_group *group;
 	int next = 0;
 
-	mutex_lock(&iommu_group_mutex);
 	while ((group = idr_get_next(&iommu_group_ida.idr, &next))) {
 		if (group->name) {
 			if (strcmp(group->name, name) == 0)
@@ -588,7 +587,6 @@ struct iommu_group *iommu_group_find(const char *name)
 		}
 		++next;
 	}
-	mutex_unlock(&iommu_group_mutex);
 
 	if (group)
 		kobject_get(group->devices_kobj);
