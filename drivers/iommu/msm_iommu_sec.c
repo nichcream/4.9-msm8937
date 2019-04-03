@@ -1009,12 +1009,6 @@ int is_vfe_secure(void)
 	return secure_camera_enabled;
 }
 
-static int msm_iommu_dma_supported(struct iommu_domain *domain,
-				  struct device *dev, u64 mask)
-{
-	return ((1ULL << 32) - 1) < mask ? 0 : 1;
-}
-
 static int msm_iommu_domain_set_attr(struct iommu_domain *domain,
 				enum iommu_attr attr, void *data)
 {
@@ -1076,7 +1070,6 @@ static struct iommu_ops msm_iommu_ops = {
 	.pgsize_bitmap = MSM_IOMMU_PGSIZES,
 	.domain_set_attr = msm_iommu_domain_set_attr,
 	.domain_get_attr = msm_iommu_domain_get_attr,
-	.dma_supported = msm_iommu_dma_supported,
 };
 
 static int __init msm_iommu_sec_init(void)
