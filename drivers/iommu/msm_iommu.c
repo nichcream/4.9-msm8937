@@ -98,7 +98,7 @@ void msm_access_control(void)
 	 */
 	if (start < kernel_start) {
 		ret = iommu_map(domain, start, start, kernel_start - start,
-				IOMMU_READ | IOMMU_WRITE | IOMMU_DEVICE);
+				IOMMU_READ | IOMMU_WRITE | IOMMU_MMIO);
 
 		if (ret) {
 			pr_err("Mapping failed for region lower than kernel\n");
