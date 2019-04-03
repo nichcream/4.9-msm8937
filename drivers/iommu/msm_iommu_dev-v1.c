@@ -313,7 +313,7 @@ static int msm_iommu_probe(struct platform_device *pdev)
 
 	drvdata->phys_base = r->start;
 
-	if (IS_ENABLED(CONFIG_MSM_IOMMU_VBIF_CHECK)) {
+	if (IS_ENABLED(CONFIG_QCOM_IOMMU_VBIF_CHECK)) {
 		drvdata->vbif_base =
 			ioremap(drvdata->phys_base - (phys_addr_t) 0x4000,
 				0x1000);

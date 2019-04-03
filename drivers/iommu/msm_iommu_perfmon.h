@@ -146,7 +146,7 @@ struct iommu_pm_hw_ops {
 
 #define MSM_IOMMU_PMU_NO_EVENT_CLASS -1
 
-#ifdef CONFIG_MSM_IOMMU_PMON
+#ifdef CONFIG_QCOM_IOMMU_PMON
 
 /**
  * Get pointer to PMU hardware access functions for IOMMUv0 PMU
