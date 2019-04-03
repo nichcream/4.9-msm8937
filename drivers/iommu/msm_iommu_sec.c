@@ -381,7 +381,7 @@ static int msm_iommu_sec_ptbl_init(void)
 	struct device dev = { 0 };
 	void *cpu_addr;
 	dma_addr_t paddr;
-	DEFINE_DMA_ATTRS(attrs);
+	unsigned long attrs = 0;
 	struct scm_desc desc = {0};
 
 	for_each_matching_node(np, msm_smmu_list)
@@ -443,9 +443,9 @@ static int msm_iommu_sec_ptbl_init(void)
 		goto fail;
 	}
 
-	dma_set_attr(DMA_ATTR_NO_KERNEL_MAPPING, &attrs);
+	attrs |= DMA_ATTR_NO_KERNEL_MAPPING;
 	dev.coherent_dma_mask = DMA_BIT_MASK(sizeof(dma_addr_t) * 8);
-	cpu_addr = dma_alloc_attrs(&dev, psize[0], &paddr, GFP_KERNEL, &attrs);
+	cpu_addr = dma_alloc_attrs(&dev, psize[0], &paddr, GFP_KERNEL, attrs);
 	if (!cpu_addr) {
 		pr_err("%s: Failed to allocate %d bytes for PTBL\n",
 			__func__, psize[0]);
@@ -480,7 +480,7 @@ static int msm_iommu_sec_ptbl_init(void)
 	return 0;
 
 fail_mem:
-	dma_free_attrs(&dev, psize[0], cpu_addr, paddr, &attrs);
+	dma_free_attrs(&dev, psize[0], cpu_addr, paddr, attrs);
 fail:
 	return ret;
 }
