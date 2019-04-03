@@ -193,7 +193,7 @@ void msm_iommu_register_notify(struct notifier_block *nb)
 }
 EXPORT_SYMBOL(msm_iommu_register_notify);
 
-#ifdef CONFIG_MSM_IOMMU_VBIF_CHECK
+#ifdef CONFIG_QCOM_IOMMU_VBIF_CHECK
 
 #define VBIF_XIN_HALT_CTRL0 0x200
 #define VBIF_XIN_HALT_CTRL1 0x204
