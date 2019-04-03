@@ -175,7 +175,7 @@ static int __get_pgprot(int prot, int len)
 
 	if (prot & IOMMU_CACHE)
 		tex = (pgprot_val(PAGE_KERNEL) >> 2) & 0x07;
-	else if (prot & IOMMU_DEVICE)
+	else if (prot & IOMMU_MMIO)
 		tex = 0;
 	else
 		tex = msm_iommu_tex_class[MSM_IOMMU_ATTR_NONCACHED];
