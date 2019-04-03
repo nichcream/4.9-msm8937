@@ -99,6 +99,7 @@ struct iommu_domain {
 	struct iommu_domain_geometry geometry;
 	void *iova_cookie;
 	char name[IOMMU_DOMAIN_NAME_LEN];
+	void *priv;
 };
 
 enum iommu_cap {
