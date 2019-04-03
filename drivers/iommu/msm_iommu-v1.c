@@ -1814,9 +1814,6 @@ static int msm_iommu_domain_set_attr(struct iommu_domain *domain,
 	}
 
 	switch (attr) {
-	case DOMAIN_ATTR_COHERENT_HTW_DISABLE:
-		__do_set_redirect(domain, data);
-		break;
 	case DOMAIN_ATTR_PROCID:
 		priv->procid = *((u32 *)data);
 		break;
@@ -1862,9 +1859,6 @@ static int msm_iommu_domain_get_attr(struct iommu_domain *domain,
 			struct msm_iommu_ctx_drvdata, attached_elm);
 
 	switch (attr) {
-	case DOMAIN_ATTR_COHERENT_HTW_DISABLE:
-		__do_get_redirect(domain, data);
-		break;
 	case DOMAIN_ATTR_PT_BASE_ADDR:
 		*((phys_addr_t *)data) = virt_to_phys(priv->pt.fl_table);
 		break;

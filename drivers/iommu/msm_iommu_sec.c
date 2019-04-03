@@ -1017,12 +1017,6 @@ static int msm_iommu_domain_set_attr(struct iommu_domain *domain,
 				enum iommu_attr attr, void *data)
 {
 	switch (attr) {
-	case DOMAIN_ATTR_COHERENT_HTW_DISABLE:
-		/*
-		 * Just quietly bail out as L2-redirect feature
-		 * cannot be enabled for Secure context banks.
-		 */
-		break;
 	case DOMAIN_ATTR_SECURE_VMID:
 		/*
 		 * MSM iommu driver doesn't set the VMID for
@@ -1048,13 +1042,6 @@ static int msm_iommu_domain_get_attr(struct iommu_domain *domain,
 	struct msm_iommu_ctx_drvdata *ctx_drvdata;
 
 	switch (attr) {
-	case DOMAIN_ATTR_COHERENT_HTW_DISABLE:
-		/*
-		 * This is the case always for secure
-		 * context banks
-		 */
-		*((unsigned int *) data) = 1;
-		break;
 	case DOMAIN_ATTR_SECURE_VMID:
 		*((int *) data) = -VMID_INVAL;
 		break;

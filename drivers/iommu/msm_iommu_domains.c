@@ -515,8 +515,6 @@ int msm_register_domain(struct msm_iova_layout *layout)
 		goto free_domain_num;
 
 	no_redirect = !(layout->domain_flags & MSM_IOMMU_DOMAIN_PT_CACHEABLE);
-	iommu_domain_set_attr(data->domain,
-			DOMAIN_ATTR_COHERENT_HTW_DISABLE, &no_redirect);
 
 	msm_iommu_set_client_name(data->domain, layout->client_name);
 
