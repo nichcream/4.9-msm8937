@@ -291,7 +291,7 @@ struct remote_iommu_petersons_spinlock {
 	uint32_t turn;
 };
 
-#ifdef CONFIG_MSM_IOMMU
+#ifdef CONFIG_QCOM_IOMMU
 void *msm_iommu_lock_initialize(void);
 void msm_iommu_mutex_lock(void);
 void msm_iommu_mutex_unlock(void);
@@ -314,7 +314,7 @@ static inline struct iommu_access_ops *msm_get_iommu_access_ops(void)
 }
 #endif
 
-#ifdef CONFIG_MSM_IOMMU_SYNC
+#ifdef CONFIG_QCOM_IOMMU_SYNC
 void msm_iommu_remote_p0_spin_lock(unsigned int need_lock);
 void msm_iommu_remote_p0_spin_unlock(unsigned int need_lock);
 
@@ -329,7 +329,7 @@ void msm_iommu_remote_p0_spin_unlock(unsigned int need_lock);
 #define msm_iommu_remote_spin_unlock(need_lock)
 #endif
 
-#ifdef CONFIG_MSM_IOMMU
+#ifdef CONFIG_QCOM_IOMMU
 /*
  * Look up an IOMMU context device by its context name. NULL if none found.
  * Useful for testing and drivers that do not yet fully have IOMMU stuff in
@@ -365,7 +365,7 @@ int msm_iommu_sec_program_iommu(struct msm_iommu_drvdata *drvdata,
 				struct msm_iommu_ctx_drvdata *ctx_drvdata);
 int is_vfe_secure(void);
 
-#ifdef CONFIG_MSM_IOMMU_V0
+#ifdef CONFIG_QCOM_IOMMU_V0
 static inline int msm_soc_version_supports_iommu_v0(void)
 {
 	static int soc_supports_v0 = -1;
@@ -418,7 +418,7 @@ u32 msm_iommu_get_nmrr(void);
 /* events for notifiers passed to msm_iommu_register_notify */
 #define TLB_SYNC_TIMEOUT 1
 
-#ifdef CONFIG_MSM_IOMMU_V1
+#ifdef CONFIG_QCOM_IOMMU_V1
 void msm_iommu_register_notify(struct notifier_block *nb);
 #else
 static inline void msm_iommu_register_notify(struct notifier_block *nb)

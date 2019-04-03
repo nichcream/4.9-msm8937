@@ -87,7 +87,7 @@ struct msm_iova_layout {
 	unsigned int is_secure;
 };
 
-#if defined(CONFIG_MSM_IOMMU)
+#if defined(CONFIG_QCOM_IOMMU)
 /**
  * ion_map_iommu - map the given handle into an iommu
  *
