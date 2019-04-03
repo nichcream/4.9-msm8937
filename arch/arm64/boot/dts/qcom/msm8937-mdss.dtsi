@@ -185,11 +185,19 @@
 
 		smmu_mdp_unsec: qcom,smmu_mdp_unsec_cb {
 			compatible = "qcom,smmu_mdp_unsec";
-			iommus = <&apps_iommu 0x2800 0>; /* For NS ctx bank */
+			iommus = <&apps_iommu 18>; /* For NS ctx bank */
+			clocks = <&clock_gcc clk_gcc_smmu_cfg_clk>,
+				 <&clock_gcc clk_gcc_apss_tcu_clk>;
+			clock-names = "gcc_smmu_cfg_clk",
+				      "gcc_apss_tcu_clk";
 		};
 		smmu_mdp_sec: qcom,smmu_mdp_sec_cb {
 			compatible = "qcom,smmu_mdp_sec";
-			iommus = <&apps_iommu 0x2801 0>; /* For SEC Ctx Bank */
+			iommus = <&apps_iommu 3>; /* For SEC Ctx Bank */
+			clocks = <&clock_gcc clk_gcc_smmu_cfg_clk>,
+				 <&clock_gcc clk_gcc_apss_tcu_clk>;
+			clock-names = "gcc_smmu_cfg_clk",
+				      "gcc_apss_tcu_clk";
 		};
 
 		mdss_fb0: qcom,mdss_fb_primary {
