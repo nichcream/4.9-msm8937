@@ -1698,6 +1698,12 @@ static struct iommu_ops msm_iommu_ops = {
 	.disable_config_clocks	= msm_iommu_disable_clocks,
 };
 
+struct bus_type iommu_non_sec_bus_type = {
+	.name = "msm_iommu_non_sec_bus",
+};
+
+struct bus_type *msm_iommu_non_sec_bus_type;
+
 int msm_iommu_init(struct device *dev)
 {
 	static bool done = false;
@@ -1708,7 +1714,14 @@ int msm_iommu_init(struct device *dev)
 	if (done)
 		return 0;
 
-	ret = bus_set_iommu(&platform_bus_type, &msm_iommu_ops);
+	msm_iommu_non_sec_bus_type = &iommu_non_sec_bus_type;
+	ret = bus_register(msm_iommu_non_sec_bus_type);
+	if (ret) {
+		dev_err(dev, "bus_register failed with ret=%d\n", ret);
+		return ret;
+	}
+
+	ret = bus_set_iommu(msm_iommu_non_sec_bus_type, &msm_iommu_ops);
 	if (ret) {
 		dev_err(dev, "bus_set_iommu failed with ret=%d\n", ret);
 		return ret;
