@@ -717,8 +717,6 @@ static int msm_iommu_probe(struct platform_device *pdev)
 	platform_set_drvdata(pdev, drvdata);
 
 	global_cfg_irq = platform_get_irq_byname(pdev, "global_cfg_NS_irq");
-	if (global_cfg_irq < 0 && global_cfg_irq == -EPROBE_DEFER)
-		return -EPROBE_DEFER;
 	if (global_cfg_irq > 0) {
 		ret = devm_request_threaded_irq(dev, global_cfg_irq,
 						NULL,
@@ -733,8 +731,6 @@ static int msm_iommu_probe(struct platform_device *pdev)
 
 	global_client_irq =
 			platform_get_irq_byname(pdev, "global_client_NS_irq");
-	if (global_client_irq < 0 && global_client_irq == -EPROBE_DEFER)
-		return -EPROBE_DEFER;
 
 	if (global_client_irq > 0) {
 		ret = devm_request_threaded_irq(dev, global_client_irq,
@@ -763,6 +759,8 @@ static int msm_iommu_probe(struct platform_device *pdev)
 		dev_err(dev, "Failed to enable clocks\n");
 		return ret;
 	}
+
+	dev_info(dev, "Going to iommu init\n");
 
 	return msm_iommu_init(&pdev->dev);
 }

@@ -1709,8 +1709,10 @@ int msm_iommu_init(struct device *dev)
 		return 0;
 
 	ret = bus_set_iommu(&platform_bus_type, &msm_iommu_ops);
-	if (ret)
+	if (ret) {
+		dev_err(dev, "bus_set_iommu failed with ret=%d\n", ret);
 		return ret;
+	}
 
 #ifdef CONFIG_ARM_AMBA
 	if (!iommu_present(&amba_bustype))
