@@ -802,6 +802,8 @@ int mdss_smmu_probe(struct platform_device *pdev)
 		return -EINVAL;
 	}
 
+	pr_info("smmu domain ctx_name=%s\n", smmu_domain.ctx_name);
+
 	if (of_find_property(pdev->dev.of_node, "iommus", NULL)) {
 		dev = &pdev->dev;
 	} else {
@@ -816,6 +818,9 @@ int mdss_smmu_probe(struct platform_device *pdev)
 			return -EINVAL;
 		}
 	}
+
+	if (!dev->iommu_group)
+		pr_err("iommu group is NULL!\n");
 
 	mdss_smmu = &mdata->mdss_smmu[smmu_domain.domain];
 	mdss_smmu->base.domain = smmu_domain.domain;
