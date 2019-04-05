@@ -22,12 +22,13 @@
 #include "venus_boot.h"
 #include "soc/qcom/secure_buffer.h"
 #include <linux/io.h>
+#include <linux/qcom_iommu.h>
 
 enum clock_properties {
 	CLOCK_PROP_HAS_SCALING = 1 << 0,
 };
 
-static inline struct device *msm_iommu_get_ctx(const char *ctx_name)
+static inline struct device *vidc_iommu_get_ctx(const char *ctx_name)
 {
 	return NULL;
 }
@@ -1283,7 +1284,7 @@ static int msm_vidc_setup_context_bank(struct context_bank_info *cb,
 	}
 	cb->dev = dev;
 
-	bus = cb->dev->bus;
+	bus = msm_iommu_get_bus(cb->dev);
 	if (IS_ERR_OR_NULL(bus)) {
 		dprintk(VIDC_ERR, "%s - failed to get bus type\n", __func__);
 		rc = PTR_ERR(bus) ?: -ENODEV;
@@ -1557,7 +1558,7 @@ static int msm_vidc_populate_legacy_context_bank(
 			goto err_setup_cb;
 		}
 
-		cb->dev = msm_iommu_get_ctx(cb->name);
+		cb->dev = vidc_iommu_get_ctx(cb->name);
 		if (IS_ERR_OR_NULL(cb->dev)) {
 			dprintk(VIDC_ERR, "%s could not get device for cb %s\n",
 					__func__, cb->name);
