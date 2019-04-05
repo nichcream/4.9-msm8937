@@ -38,6 +38,8 @@
 #define GET_SMMU_HDL(x, y) (((x) << COOKIE_SIZE) | ((y) & COOKIE_MASK))
 #define GET_SMMU_TABLE_IDX(x) (((x) >> COOKIE_SIZE) & COOKIE_MASK)
 
+#define CONFIG_CAM_SMMU_DBG
+
 #ifdef CONFIG_CAM_SMMU_DBG
 #define CDBG(fmt, args...) pr_err(fmt, ##args)
 #else
