@@ -2181,25 +2181,14 @@ int arm_iommu_attach_device(struct device *dev,
 {
 	int err;
 	struct iommu_domain *domain = mapping->domain;
-	struct iommu_group *group = dev->iommu_group;
 
-	if (!group) {
-		dev_err(dev, "No iommu associated with device\n");
-		return -EINVAL;
-	}
-
-	if (iommu_get_domain_for_dev(dev)) {
-		dev_err(dev, "Device already attached to other iommu_domain\n");
-		return -EINVAL;
-	}
-
-	err = iommu_attach_group(domain, group);
+	err = iommu_attach_device(domain, dev);
 	if (err)
 		return err;
 
 	err = arm_iommu_init_mapping(dev, mapping);
 	if (err) {
-		iommu_detach_group(domain, group);
+		iommu_detach_device(domain, dev);
 		return err;
 	}
 
@@ -2229,11 +2218,6 @@ void arm_iommu_detach_device(struct device *dev)
 		return;
 	}
 
-	if (!dev->iommu_group) {
-		dev_err(dev, "No iommu associated with device\n");
-		return;
-	}
-
 	iommu_domain_get_attr(mapping->domain, DOMAIN_ATTR_S1_BYPASS,
 					&s1_bypass);
 
@@ -2244,7 +2228,7 @@ void arm_iommu_detach_device(struct device *dev)
 	if (msm_dma_unmap_all_for_dev(dev))
 		dev_warn(dev, "IOMMU detach with outstanding mappings\n");
 
-	iommu_detach_group(mapping->domain, dev->iommu_group);
+	iommu_detach_device(mapping->domain, dev);
 	dev->archdata.mapping = NULL;
 	if (!s1_bypass)
 		set_dma_ops(dev, NULL);
