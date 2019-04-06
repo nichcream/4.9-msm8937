@@ -355,6 +355,7 @@ static void mdss_fb_set_bl_brightness(struct led_classdev *led_cdev,
 	}
 }
 
+#if 0
 static enum led_brightness mdss_fb_get_bl_brightness(
 	struct led_classdev *led_cdev)
 {
@@ -366,12 +367,15 @@ static enum led_brightness mdss_fb_get_bl_brightness(
 
 	return value;
 }
+#endif
 
 static struct led_classdev backlight_led = {
 	.name           = "lcd-backlight",
 	.brightness     = MDSS_MAX_BL_BRIGHTNESS / 2,
 	.brightness_set = mdss_fb_set_bl_brightness,
+#if 0
 	.brightness_get = mdss_fb_get_bl_brightness,
+#endif
 	.max_brightness = MDSS_MAX_BL_BRIGHTNESS,
 };
 
