@@ -383,11 +383,15 @@ static int create_gpio_led(const struct gpio_led *template,
 	if (ret < 0)
 		return ret;
 
+	ret = devm_led_classdev_register(parent, &led_dat->cdev);
+	if (ret < 0)
+		return ret;
+
 	if (strcmp(led_dat->cdev.name, "infrared") == 0) {
 		device_create_file(led_dat->cdev.dev, &dev_attr_transmit);
 	}
 
-	return devm_led_classdev_register(parent, &led_dat->cdev);
+	return 0;
 }
 
 struct gpio_leds_priv {
