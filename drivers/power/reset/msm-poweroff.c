@@ -368,6 +368,13 @@ static void msm_restart_prepare(const char *cmd)
 		}
 	}
 
+	// During panic, reboot to recovery mode so that we get a chance to obtain
+	// a ramoops.
+	if (in_panic) {
+		qpnp_pon_set_restart_reason(PON_RESTART_REASON_RECOVERY);
+		__raw_writel(0x77665502, restart_reason);
+	}
+
 	flush_cache_all();
 
 	/*outer_flush_all is not supported by 64bit kernel*/
