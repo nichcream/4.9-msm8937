@@ -44,6 +44,7 @@
 #include <linux/kref.h>
 #include <linux/sort.h>
 #include <linux/msm_dma_iommu_mapping.h>
+#include <linux/qcom_iommu.h>
 #include <asm/dma-iommu.h>
 #include <soc/qcom/scm.h>
 #include "adsprpc_compat.h"
@@ -4034,7 +4035,7 @@ static int fastrpc_cb_legacy_probe(struct device *dev)
 		goto bail;
 
 	VERIFY(err, !IS_ERR_OR_NULL(first_sess->smmu.mapping =
-				arm_iommu_create_mapping(&platform_bus_type,
+				arm_iommu_create_mapping(msm_iommu_get_bus(dev),
 						start, 0x78000000)));
 	if (err)
 		goto bail;
