@@ -800,6 +800,7 @@ static int msm_audio_ion_probe(struct platform_device *pdev)
 	int rc = 0;
 	const char *msm_audio_ion_dt = "qcom,smmu-enabled";
 	const char *msm_audio_ion_smmu = "qcom,smmu-version";
+	const char *msm_audio_ion_smmu_sid = "qcom,smmu-sid";
 	const char *msm_audio_ion_smmu_sid_mask = "qcom,smmu-sid-mask";
 	bool smmu_enabled;
 	enum apr_subsys_state q6_state;
@@ -849,21 +850,30 @@ static int msm_audio_ion_probe(struct platform_device *pdev)
 
 		/* Get SMMU SID information from Devicetree */
 		rc = of_property_read_u64(dev->of_node,
-					  msm_audio_ion_smmu_sid_mask,
-					  &smmu_sid_mask);
+					  msm_audio_ion_smmu_sid,
+					  &smmu_sid);
 		if (rc) {
 			dev_err(dev,
-				"%s: qcom,smmu-sid-mask missing in DT node, using default\n",
+				"%s: qcom,smmu-sid missing in DT node, using iommus\n",
 				__func__);
-			smmu_sid_mask = 0xFFFFFFFFFFFFFFFF;
+			/* Get SMMU SID mask information from Devicetree */
+			rc = of_property_read_u64(dev->of_node,
+						  msm_audio_ion_smmu_sid_mask,
+						  &smmu_sid_mask);
+			if (rc) {
+				dev_err(dev, "%s: qcom,smmu-sid-mask missing in DT node, using default\n",
+					__func__);
+				smmu_sid_mask = 0xFFFFFFFFFFFFFFFF;
+			}
+
+			rc = of_parse_phandle_with_args(dev->of_node, "iommus",
+							"#iommu-cells", 0, &iommuspec);
+			if (rc)
+				dev_err(dev, "%s: could not get smmu SID, ret = %d\n",
+					__func__, rc);
+			else
+				smmu_sid = (iommuspec.args[0] & smmu_sid_mask);
 		}
-		rc = of_parse_phandle_with_args(dev->of_node, "iommus",
-						"#iommu-cells", 0, &iommuspec);
-		if (rc)
-			dev_err(dev, "%s: could not get smmu SID, ret = %d\n",
-				__func__, rc);
-		else
-			smmu_sid = (iommuspec.args[0] & smmu_sid_mask);
 
 		msm_audio_ion_data.smmu_sid_bits =
 			smmu_sid << MSM_AUDIO_SMMU_SID_OFFSET;
