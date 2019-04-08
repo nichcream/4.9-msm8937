@@ -737,22 +737,30 @@ err:
 static int msm_audio_smmu_init(struct device *dev)
 {
 	struct dma_iommu_mapping *mapping;
+	struct device_node *child;
+	struct platform_device *pdev_cb = NULL;
 	int ret;
 
-	mapping = arm_iommu_create_mapping(msm_iommu_get_bus(dev),
+	for_each_child_of_node(dev->of_node, child) {
+		if (!strcmp(child->name, "qcom,msm-audio-ion-cb"))
+			pdev_cb = of_platform_device_create(child, NULL, dev);
+	}
+
+	msm_audio_ion_data.cb_dev = pdev_cb != NULL ? &pdev_cb->dev : dev;
+
+	mapping = arm_iommu_create_mapping(msm_iommu_get_bus(msm_audio_ion_data.cb_dev),
 					   MSM_AUDIO_ION_VA_START,
 					   MSM_AUDIO_ION_VA_LEN);
 	if (IS_ERR(mapping))
 		return PTR_ERR(mapping);
 
-	ret = arm_iommu_attach_device(dev, mapping);
+	ret = arm_iommu_attach_device(msm_audio_ion_data.cb_dev, mapping);
 	if (ret) {
-		dev_err(dev, "%s: Attach failed, err = %d\n",
+		dev_err(msm_audio_ion_data.cb_dev, "%s: Attach failed, err = %d\n",
 			__func__, ret);
 		goto fail_attach;
 	}
 
-	msm_audio_ion_data.cb_dev = dev;
 	msm_audio_ion_data.mapping = mapping;
 	INIT_LIST_HEAD(&msm_audio_ion_data.alloc_list);
 	mutex_init(&(msm_audio_ion_data.list_mutex));

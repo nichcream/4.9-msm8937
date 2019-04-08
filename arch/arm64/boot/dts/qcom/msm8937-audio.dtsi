@@ -15,8 +15,11 @@
 #include "msm8953-wsa881x.dtsi"
 
 &msm_audio_ion {
-	iommus = <&apps_iommu 12>;
 	qcom,smmu-sid = /bits/ 64 <0x2001>;
+};
+
+&msm_audio_ion_cb {
+	iommus = <&apps_iommu 12>;
 };
 
 &soc {
