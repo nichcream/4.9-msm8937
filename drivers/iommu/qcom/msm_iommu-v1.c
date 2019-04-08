@@ -764,6 +764,12 @@ static int msm_iommu_attach_dev(struct iommu_domain *domain, struct device *dev)
 
 	master = dev->archdata.iommu;
 
+	if (!master) {
+		pr_err("%s: master is NULL\n", __func__);
+		ret = -EINVAL;
+		goto unlock;
+	}
+
 	iommu_drvdata = master->iommu_drvdata;
 	ctx_drvdata = master->ctx_drvdata;
 
