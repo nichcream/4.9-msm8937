@@ -658,7 +658,8 @@ static int msm_fd_querycap(struct file *file,
 	cap->bus_info[0] = 0;
 	strlcpy(cap->driver, MSM_FD_DRV_NAME, sizeof(cap->driver));
 	strlcpy(cap->card, MSM_FD_DRV_NAME, sizeof(cap->card));
-	cap->capabilities = V4L2_CAP_STREAMING | V4L2_CAP_VIDEO_OUTPUT;
+	cap->device_caps = V4L2_CAP_STREAMING | V4L2_CAP_VIDEO_OUTPUT;
+	cap->capabilities = cap->device_caps | V4L2_CAP_DEVICE_CAPS;
 
 	return 0;
 }
