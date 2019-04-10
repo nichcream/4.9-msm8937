@@ -186,6 +186,7 @@
 			qcom,pmic-revid = <&pmi8950_revid>;
 			qcom,force-aicl-rerun;
 			qcom,aicl-rerun-period-s = <180>;
+			dpdm-supply = <&qusb_phy>;
 
 			qcom,chgr@1000 {
 				reg = <0x1000 0x100>;
