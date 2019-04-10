@@ -5365,7 +5365,9 @@ static int iris_vidioc_querycap(struct file *file, void *priv,
 	strlcpy(radio->g_cap.card, DRIVER_CARD, sizeof(radio->g_cap.card));
 
 	radio->g_cap.capabilities = V4L2_CAP_TUNER | V4L2_CAP_RADIO;
-	capability->capabilities = radio->g_cap.capabilities;
+	capability->device_caps = radio->g_cap.capabilities;
+	capability->capabilities = capability->device_caps | V4L2_CAP_DEVICE_CAPS;
+
 	return 0;
 }
 
