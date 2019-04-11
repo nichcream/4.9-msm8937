@@ -386,10 +386,7 @@
 		compatible = "qcom,msm-audio-ion";
 		qcom,smmu-version = <2>;
 		qcom,smmu-enabled;
-		msm_audio_ion_cb: qcom,msm-audio-ion-cb {
-			compatible = "qcom,msm-audio-ion,context-bank";
-			iommus = <&apps_smmu 0x1821 0x0>;
-		};
+		iommus = <&apps_smmu 0x1821 0x0>;
 	};
 
 	qcom,msm-adsp-loader {
