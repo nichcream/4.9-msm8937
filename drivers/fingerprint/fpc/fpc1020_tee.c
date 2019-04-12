@@ -486,11 +486,17 @@ static int fpc1020_request_named_gpio(struct fpc1020_data *fpc1020,
 	dev_dbg(dev, "%s %d\n", label, *gpio);
 	return 0;
 }
+
+static struct device fpc_dev = {
+	.init_name = "fpc",
+};
+
 static int fpc1020_probe(struct platform_device *pdev)
 {
 	struct device *dev = &pdev->dev;
 	int rc = 0;
 	struct device_node *np = dev->of_node;
+	struct device *fdev = &fpc_dev;
 
 	struct fpc1020_data *fpc1020 = devm_kzalloc(dev, sizeof(*fpc1020),
 			GFP_KERNEL);
@@ -540,9 +546,21 @@ static int fpc1020_probe(struct platform_device *pdev)
 	mutex_init(&fpc1020->lock);
 	wake_lock_init(&fpc1020->ttw_wl, WAKE_LOCK_SUSPEND, "fpc_ttw_wl");
 
+	rc = device_register(fdev);
+	if (rc) {
+		dev_err(dev, "%s: failed to register fpc device\n", __func__);
+		goto exit;
+	}
+
 	rc = sysfs_create_group(&dev->kobj, &attribute_group);
 	if (rc) {
 		dev_err(dev, "could not create sysfs\n");
+		goto exit;
+	}
+
+	rc = sysfs_create_link(&fdev->kobj, &dev->kobj, "soc:fpc1020" /*dev_name(dev)*/);
+	if (rc) {
+		dev_err(dev, "%s: failed to create fpc link\n", __func__);
 		goto exit;
 	}
 
@@ -558,6 +576,7 @@ static int fpc1020_remove(struct platform_device *pdev)
 	sysfs_remove_group(&pdev->dev.kobj, &attribute_group);
 	mutex_destroy(&fpc1020->lock);
 	wake_lock_destroy(&fpc1020->ttw_wl);
+	device_unregister(&fpc_dev);
 	dev_info(&pdev->dev, "%s\n", __func__);
 	return 0;
 }
