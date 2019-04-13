@@ -1273,10 +1273,6 @@ static int msm_mi2s_snd_startup(struct snd_pcm_substream *substream)
 
 	pr_debug("%s(): substream = %s  stream = %d\n", __func__,
 		 substream->name, substream->stream);
-	if (!q6core_is_adsp_ready()) {
-		pr_err("%s(): adsp not ready\n", __func__);
-		return -EINVAL;
-	}
 
 	if (!q6core_is_adsp_ready()) {
 		pr_err("%s(): adsp not ready\n", __func__);
@@ -1354,10 +1350,6 @@ static int msm_prim_auxpcm_startup(struct snd_pcm_substream *substream)
 
 	pr_debug("%s(): substream = %s\n",
 			__func__, substream->name);
-	if (!q6core_is_adsp_ready()) {
-		pr_err("%s(): adsp not ready\n", __func__);
-		return -EINVAL;
-	}
 
 	if (!q6core_is_adsp_ready()) {
 		pr_err("%s(): adsp not ready\n", __func__);
@@ -1430,10 +1422,6 @@ static int msm_sec_mi2s_snd_startup(struct snd_pcm_substream *substream)
 
 	pr_debug("%s(): substream = %s  stream = %d\n", __func__,
 				substream->name, substream->stream);
-	if (!q6core_is_adsp_ready()) {
-		pr_err("%s(): adsp not ready\n", __func__);
-		return -EINVAL;
-	}
 
 	if (substream->stream == SNDRV_PCM_STREAM_CAPTURE) {
 		pr_info("%s: Secondary Mi2s does not support capture\n",
@@ -1761,7 +1749,6 @@ static int msm_audrx_init(struct snd_soc_pcm_runtime *rtd)
 		}
 	}
 
-	//TODO: relook
 	INIT_DELAYED_WORK(&lineout_amp_enable, msm8952_ext_spk__delayed_enable);
 
 	INIT_DELAYED_WORK(&lineout_amp_dualmode, msm8x16_ext_spk_delayed_dualmode);
