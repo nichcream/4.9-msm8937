@@ -56,7 +56,7 @@
 	qcom,warm-bat-india-decidegc = <500>;
 	qcom,fg-iterm-ma = <200>;
 	qcom,fg-chg-iterm-ma = <150>;
-	qcom,resume-soc = <99>;
+	qcom,resume-soc-raw = <254>;
 	qcom,fg-cutoff-voltage-mv = <3500>;
 	qcom,cl-max-increment-deciperc = <1>;
 	qcom,cl-max-decrement-deciperc = <1>;
