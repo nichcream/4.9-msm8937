@@ -428,12 +428,12 @@ struct qpnp_wled {
 	ktime_t			start_ovp_fault_time;
 };
 
-static int qpnp_wled_step_delay_us = 52000;
+static int qpnp_wled_step_delay_us = 42000;
 module_param_named(
 	total_step_delay_us, qpnp_wled_step_delay_us, int, 0600
 );
 
-static int qpnp_wled_step_size_threshold = 3;
+static int qpnp_wled_step_size_threshold = 20;
 module_param_named(
 	step_size_threshold, qpnp_wled_step_size_threshold, int, 0600
 );
@@ -681,6 +681,67 @@ static int qpnp_wled_set_step_level(struct qpnp_wled *wled, int new_level)
 
 	if (i != end_level) {
 		i = end_level;
+		rc = qpnp_wled_set_level(wled, i);
+		if (rc < 0)
+			return rc;
+	}
+
+	return 0;
+}
+
+static int qpnp_wled_set_step_level_4095(struct qpnp_wled *wled, int new_level)
+{
+	int rc, i, num_steps, delay_us;
+	u16 level, step_size;
+	bool level_inc = false;
+
+	level = wled->prev_level;
+
+	if (level <= 0)
+		qpnp_wled_set_level(wled, new_level);
+
+	level_inc = (new_level > level);
+
+	num_steps = abs(level - new_level);
+	if (!num_steps)
+		return 0;
+
+	delay_us = qpnp_wled_step_delay_us / num_steps;
+	pr_debug("level goes from [%d %d] num_steps: %d, delay: %d\n",
+		level, new_level, num_steps, delay_us);
+
+	if (delay_us < 500) {
+		step_size = 1000 / delay_us;
+		num_steps = num_steps / step_size;
+		delay_us = 1000;
+	} else {
+		if (num_steps < qpnp_wled_step_size_threshold)
+			delay_us *= qpnp_wled_step_delay_gain;
+
+		step_size = 1;
+	}
+
+	i = level;
+	while (num_steps--) {
+		if (level_inc)
+			i += step_size;
+		else
+			i -= step_size;
+
+		rc = qpnp_wled_set_level(wled, i);
+		if (rc < 0)
+			return rc;
+
+		if (delay_us > 0) {
+			if (delay_us < 20000)
+				usleep_range(delay_us, delay_us + 1);
+			else
+				msleep(delay_us / USEC_PER_MSEC);
+		}
+	}
+
+	if (i != new_level) {
+		i = new_level;
 		rc = qpnp_wled_set_level(wled, i);
 		if (rc < 0)
 			return rc;
@@ -1132,11 +1193,15 @@ static void qpnp_wled_work(struct work_struct *work)
 		}
 		wled->prev_level = level_255;
 	} else if (level) {
-		rc = qpnp_wled_set_level(wled, level);
+		if (wled->stepper_en)
+			rc = qpnp_wled_set_step_level_4095(wled, level);
+		else
+			rc = qpnp_wled_set_level(wled, level);
 		if (rc) {
 			dev_err(&wled->pdev->dev, "wled set level failed\n");
 			goto unlock_mutex;
 		}
+		wled->prev_level = level;
 	}
 
 	if (!!level != wled->prev_state) {
@@ -2356,6 +2421,7 @@ static int qpnp_wled_parse_dt(struct qpnp_wled *wled)
 				return -EDOM;
 			}
 		}
+		qpnp_wled_step_size_threshold = 3;
 	}
 
 	wled->stepper_en = of_property_read_bool(pdev->dev.of_node,
