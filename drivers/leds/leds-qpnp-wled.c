@@ -698,7 +698,7 @@ static int qpnp_wled_set_step_level_4095(struct qpnp_wled *wled, int new_level)
 	level = wled->prev_level;
 
 	if (level <= 0)
-		qpnp_wled_set_level(wled, new_level);
+		return qpnp_wled_set_level(wled, new_level);
 
 	level_inc = (new_level > level);
 
