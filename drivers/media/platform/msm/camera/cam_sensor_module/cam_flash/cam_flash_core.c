@@ -1,4 +1,4 @@
-/* Copyright (c) 2017-2018, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2017-2019, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -438,7 +438,7 @@ static int cam_flash_ops(struct cam_flash_ctrl *flash_ctrl,
 	if (flash_ctrl->switch_trigger)
 		cam_res_mgr_led_trigger_event(
 			flash_ctrl->switch_trigger,
-			LED_SWITCH_ON);
+			(enum led_brightness)LED_SWITCH_ON);
 
 	return 0;
 }
@@ -452,7 +452,7 @@ int cam_flash_off(struct cam_flash_ctrl *flash_ctrl)
 
 	if (flash_ctrl->switch_trigger)
 		cam_res_mgr_led_trigger_event(flash_ctrl->switch_trigger,
-			LED_SWITCH_OFF);
+			(enum led_brightness)LED_SWITCH_OFF);
 
 	flash_ctrl->flash_state = CAM_FLASH_STATE_START;
 	return 0;
@@ -702,7 +702,12 @@ int cam_flash_pmic_apply_setting(struct cam_flash_ctrl *fctrl,
 					fctrl->flash_state);
 					return -EINVAL;
 				}
-
+				rc = cam_flash_prepare(fctrl, true);
+				if (rc) {
+					CAM_ERR(CAM_FLASH,
+					"Enable Regulator Failed rc = %d", rc);
+					return rc;
+				}
 				rc = cam_flash_high(fctrl, flash_data);
 				if (rc)
 					CAM_ERR(CAM_FLASH,
@@ -717,7 +722,12 @@ int cam_flash_pmic_apply_setting(struct cam_flash_ctrl *fctrl,
 					fctrl->flash_state);
 					return -EINVAL;
 				}
-
+				rc = cam_flash_prepare(fctrl, true);
+				if (rc) {
+					CAM_ERR(CAM_FLASH,
+					"Enable Regulator Failed rc = %d", rc);
+					return rc;
+				}
 				rc = cam_flash_low(fctrl, flash_data);
 				if (rc)
 					CAM_ERR(CAM_FLASH,
@@ -731,6 +741,15 @@ int cam_flash_pmic_apply_setting(struct cam_flash_ctrl *fctrl,
 					"LED OFF FAILED: %d",
 					rc);
 					return rc;
+				}
+				if ((fctrl->flash_state ==
+					CAM_FLASH_STATE_START) &&
+					(fctrl->is_regulator_enabled == true)) {
+					rc = cam_flash_prepare(fctrl, false);
+					if (rc)
+						CAM_ERR(CAM_FLASH,
+						"Disable Regulator failed: %d",
+						rc);
 				}
 			}
 		} else if (fctrl->nrt_info.cmn_attr.cmd_type ==
@@ -888,7 +907,7 @@ int cam_flash_i2c_pkt_parser(struct cam_flash_ctrl *fctrl, void *arg)
 	/* getting CSL Packet */
 	ioctl_ctrl = (struct cam_control *)arg;
 
-	if (copy_from_user((&config), (void __user *) ioctl_ctrl->handle,
+	if (copy_from_user((&config), u64_to_user_ptr(ioctl_ctrl->handle),
 		sizeof(config))) {
 		CAM_ERR(CAM_FLASH, "Copy cmd handle from user failed");
 		return -EFAULT;
@@ -909,7 +928,8 @@ int cam_flash_i2c_pkt_parser(struct cam_flash_ctrl *fctrl, void *arg)
 	}
 
 	/* Add offset to the flash csl header */
-	csl_packet = (struct cam_packet *)(generic_ptr + config.offset);
+	csl_packet = (struct cam_packet *)(uintptr_t)(generic_ptr +
+			config.offset);
 	switch (csl_packet->header.op_code & 0xFFFFFF) {
 	case CAM_FLASH_PACKET_OPCODE_INIT: {
 		/* INIT packet*/
@@ -1181,7 +1201,7 @@ int cam_flash_pmic_pkt_parser(struct cam_flash_ctrl *fctrl, void *arg)
 	struct cam_cmd_buf_desc *cmd_desc = NULL;
 	struct common_header *cmn_hdr;
 	struct cam_config_dev_cmd config;
-	struct cam_req_mgr_add_request add_req = {0};
+	struct cam_req_mgr_add_request add_req;
 	struct cam_flash_init *cam_flash_info = NULL;
 	struct cam_flash_set_rer *flash_rer_info = NULL;
 	struct cam_flash_set_on_off *flash_operation_info = NULL;
@@ -1342,9 +1362,6 @@ int cam_flash_pmic_pkt_parser(struct cam_flash_ctrl *fctrl, void *arg)
 			for (i = 0; i < flash_operation_info->count; i++)
 				flash_data->led_current_ma[i]
 				= flash_operation_info->led_current_ma[i];
-
-			if (flash_data->opcode == CAMERA_SENSOR_FLASH_OP_OFF)
-				add_req.skip_before_applying |= SKIP_NEXT_FRAME;
 		}
 		break;
 		default:
@@ -1474,7 +1491,7 @@ update_req_mgr:
 
 		if ((csl_packet->header.op_code & 0xFFFFF) ==
 			CAM_FLASH_PACKET_OPCODE_SET_OPS)
-			add_req.skip_before_applying |= 1;
+			add_req.skip_before_applying = 1;
 		else
 			add_req.skip_before_applying = 0;
 
