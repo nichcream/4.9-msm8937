@@ -17,6 +17,7 @@ endif
 
 ifeq ($(call is-board-platform-in-list,msm8909),true)
 AUDIO_SELECT  := CONFIG_SND_SOC_BG_8909=m
+AUDIO_SELECT  += CONFIG_SND_SOC_8909_DIG_CDC=m
 endif
 
 AUDIO_CHIPSET := audio
@@ -29,7 +30,7 @@ LOCAL_PATH := $(call my-dir)
 ifneq ($(findstring vendor,$(LOCAL_PATH)),)
 
 ifneq ($(findstring opensource,$(LOCAL_PATH)),)
-	AUDIO_BLD_DIR := $(ANDROID_BUILD_TOP)/vendor/qcom/opensource/audio-kernel
+	AUDIO_BLD_DIR := $(shell pwd)/vendor/qcom/opensource/audio-kernel
 endif # opensource
 
 ifeq ($(AUDIO_FEATURE_ENABLED_DLKM_8909W),true)
