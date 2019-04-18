@@ -421,6 +421,11 @@ enum wake_reason {
 #define HVDCP_OTG_VOTER		"HVDCP_OTG_VOTER"
 #define HVDCP_PULSING_VOTER	"HVDCP_PULSING_VOTER"
 
+/* fg cc workaround */
+#if defined(CONFIG_MACH_XIAOMI_LAND)
+#define NO_CHARGE_COUNTER
+#endif
+
 static const unsigned int smbchg_extcon_cable[] = {
 	EXTCON_USB,
 	EXTCON_USB_HOST,
@@ -5978,7 +5983,9 @@ static enum power_supply_property smbchg_battery_properties[] = {
 	POWER_SUPPLY_PROP_RESTRICTED_CHARGING,
 	POWER_SUPPLY_PROP_ALLOW_HVDCP3,
 	POWER_SUPPLY_PROP_MAX_PULSE_ALLOWED,
+#ifndef NO_CHARGE_COUNTER
 	POWER_SUPPLY_PROP_CHARGE_COUNTER,
+#endif
 	POWER_SUPPLY_PROP_CYCLE_COUNT,
 };
 
