@@ -1,0 +1,4 @@
+#include "pm8937.dtsi"
+#include "pmi8950.dtsi"
+#include "msm8937.dtsi"
+#include "msm8937-regulator.dtsi"
