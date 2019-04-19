@@ -1,0 +1,3 @@
+&pm8937_s5 {
+	qcom,mode = "pwm";
+};

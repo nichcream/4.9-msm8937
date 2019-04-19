@@ -1,0 +1,7 @@
+&wled {
+	qcom,en-cabc;
+};
+
+&pmi_haptic {
+	/delete-property/ qcom,en-brake;
+};
