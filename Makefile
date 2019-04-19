@@ -7,6 +7,10 @@ ifeq ($(CONFIG_ARCH_SDM439), y)
 include $(srctree)/techpack/audio/config/sdm450auto.conf
 export
 endif
+ifeq ($(CONFIG_MACH_XIAOMI_SANTONI), y)
+CONFIG_SND_SOC_AW87319=y
+export
+endif
 ifeq ($(CONFIG_ARCH_SDM670), y)
 include $(srctree)/techpack/audio/config/sdm710auto_static.conf
 export
