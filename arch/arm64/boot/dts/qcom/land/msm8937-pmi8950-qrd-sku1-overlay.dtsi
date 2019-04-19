@@ -1,0 +1,3 @@
+#include "msm8937.dtsi"
+#include "msm8937-camera.dtsi"
+#include "msm8937-regulator.dtsi"

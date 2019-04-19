@@ -502,7 +502,7 @@ sdm429-qrd-overlay.dtbo-base := sdm429.dtb \
 	msm8937-interposer-sdm429.dtb
 else
 ifeq ($(CONFIG_MACH_XIAOMI_MSM8937),y)
-dtb-$(CONFIG_MACH_XIAOMI_LAND) += msm8937-pmi8950-qrd-sku1.dtb
+dtb-$(CONFIG_MACH_XIAOMI_LAND) += msm8937-pmi8950-qrd-sku1-land.dtb
 else
 dtb-$(CONFIG_ARCH_MSM8953) += msm8953-cdp.dtb \
 	msm8953-mtp.dtb \
