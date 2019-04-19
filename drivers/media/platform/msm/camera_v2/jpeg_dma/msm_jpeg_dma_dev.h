@@ -1,4 +1,4 @@
-/* Copyright (c) 2015-2016, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2015-2016, 2018, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -22,7 +22,7 @@
 /* Max number of clocks defined in device tree */
 #define MSM_JPEGDMA_MAX_CLK 10
 /* Core clock index */
-#define MSM_JPEGDMA_CORE_CLK 0
+#define MSM_JPEGDMA_CORE_CLK "core_clk"
 /* Max number of regulators defined in device tree */
 #define MSM_JPEGDMA_MAX_REGULATOR_NUM 3
 /* Max number of planes supported */
@@ -36,9 +36,9 @@
 
 /* Dma input output size limitations */
 #define MSM_JPEGDMA_MAX_WIDTH 65536
-#define MSM_JPEGDMA_MIN_WIDTH 32
+#define MSM_JPEGDMA_MIN_WIDTH 8
 #define MSM_JPEGDMA_MAX_HEIGHT 65536
-#define MSM_JPEGDMA_MIN_HEIGHT 32
+#define MSM_JPEGDMA_MIN_HEIGHT 8
 #define MSM_JPEGDMA_STRIDE_ALIGN 8
 
 /*
@@ -59,7 +59,7 @@ enum msm_jpegdma_plane_type {
  * struct msm_jpegdma_format - Dma format.
  * @name: Format name.
  * @fourcc: v4l2 fourcc code.
- * @depth: Number of bits per pixel.
+ * @depth: Number of bits per pix.
  * @num_planes: number of planes.
  * @colplane_h: Color plane horizontal subsample.
  * @colplane_v: Color plane vertical subsample.
@@ -109,6 +109,8 @@ struct msm_jpegdma_size_config {
 	struct msm_jpegdma_size out_size;
 	struct msm_jpegdma_format format;
 	unsigned int fps;
+	unsigned int in_offset;
+	unsigned int out_offset;
 };
 
 /*
@@ -262,6 +264,8 @@ struct jpegdma_ctx {
 	struct v4l2_format format_out;
 	struct v4l2_rect crop;
 	struct v4l2_fract timeperframe;
+	unsigned int in_offset;
+	unsigned int out_offset;
 
 	unsigned int config_idx;
 	struct msm_jpegdma_plane_config plane_config[MSM_JPEGDMA_MAX_CONFIGS];
@@ -334,7 +338,7 @@ struct msm_jpegdma_device {
 	void __iomem *iomem_base[MSM_JPEGDMA_IOMEM_LAST];
 
 	struct resource *irq;
-	struct regulator **vdd;
+	struct msm_cam_regulator *dma_vdd;
 	int num_reg;
 
 	struct clk **clk;

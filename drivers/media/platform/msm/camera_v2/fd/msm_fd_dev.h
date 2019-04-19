@@ -1,4 +1,4 @@
-/* Copyright (c) 2014-2016, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2014-2018, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -23,6 +23,8 @@
 #include <linux/msm_ion.h>
 #include "cam_soc_api.h"
 #include "cam_hw_ops.h"
+#include "msm_cpp.h"
+
 /* Maximum number of result buffers */
 #define MSM_FD_MAX_RESULT_BUFS 5
 /* Max number of clocks defined in device tree */
@@ -33,6 +35,18 @@
 #define MSM_FD_MAX_FACES_DETECTED 32
 /* Max number of regulators defined in device tree */
 #define MSM_FD_MAX_REGULATOR_NUM 3
+
+/* Conditional spin lock macro */
+#define MSM_FD_SPIN_LOCK(l, f) ({\
+	if (f) \
+		spin_lock(&l); \
+})
+
+/* Conditional spin unlock macro */
+#define MSM_FD_SPIN_UNLOCK(l, f) ({ \
+	if (f) \
+		spin_unlock(&l); \
+})
 
 /*
  * struct msm_fd_size - Structure contain FD size related values.
@@ -70,7 +84,7 @@ struct msm_fd_setings {
  * @crop: V4l2 crop structure.
  * @bytesperline: Bytes per line of input image buffer.
  * @sizeimage: Size of input image buffer.
- * @pixelformat: Pixel format of input image buffer.
+ * @pixeformat: Pix format of input image buffer.
  */
 struct msm_fd_format {
 	struct msm_fd_size *size;
@@ -160,6 +174,7 @@ struct fd_ctx {
 	struct msm_fd_mem_pool mem_pool;
 	struct msm_fd_stats *stats;
 	struct msm_fd_buf_handle work_buf;
+	struct mutex lock;
 };
 
 /*
@@ -214,18 +229,20 @@ enum msm_fd_mem_resources {
  * @work_queue: Pointer to FD device IRQ bottom half workqueue.
  * @work: IRQ bottom half work struct.
  * @hw_halt_completion: Completes when face detection hw halt completes.
+ * @recovery_mode: Indicates if FD is in recovery mode
  */
 struct msm_fd_device {
 	u32 hw_revision;
 
 	struct mutex lock;
 	spinlock_t slock;
+	struct mutex recovery_lock;
 	int ref_count;
 
 	int irq_num;
 	void __iomem *iomem_base[MSM_FD_IOMEM_LAST];
 	struct msm_cam_clk_info *clk_info;
-	struct regulator **vdd;
+	struct msm_cam_regulator *vdd_info;
 	int num_reg;
 	struct resource *irq;
 
@@ -248,6 +265,8 @@ struct msm_fd_device {
 	struct workqueue_struct *work_queue;
 	struct work_struct work;
 	struct completion hw_halt_completion;
+	int recovery_mode;
+	uint32_t clk_rate_idx;
 };
 
 #endif /* __MSM_FD_DEV_H__ */

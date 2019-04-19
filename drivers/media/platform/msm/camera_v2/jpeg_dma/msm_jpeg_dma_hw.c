@@ -1,4 +1,4 @@
-/* Copyright (c) 2015-2016, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2015-2018, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -72,6 +72,20 @@ static const struct msm_jpegdma_block msm_jpegdma_block_sel[] = {
 };
 
 /*
+ * jpegdma_do_div - long division.
+ * @num: dividend
+ * @den: divisor
+ * returns quotient value.
+ */
+static inline long long jpegdma_do_div(long long num, long long den)
+{
+	uint64_t n = (uint64_t) num;
+
+	do_div(n, (uint32_t)den);
+	return n;
+}
+
+/*
  * msm_jpegdma_hw_read_reg - dma read from register.
  * @dma: Pointer to dma device.
  * @base_idx: dma memory resource index.
@@ -93,7 +107,7 @@ static inline u32 msm_jpegdma_hw_read_reg(struct msm_jpegdma_device *dma,
 static inline void msm_jpegdma_hw_write_reg(struct msm_jpegdma_device *dma,
 	enum msm_jpegdma_mem_resources base_idx, u32 reg, u32 value)
 {
-	pr_debug("%s:%d]%p %08x\n", __func__, __LINE__,
+	pr_debug("%s:%d]%pK %08x\n", __func__, __LINE__,
 		dma->iomem_base[base_idx] + reg,
 		value);
 	msm_camera_io_w(value, dma->iomem_base[base_idx] + reg);
@@ -166,6 +180,23 @@ static int msm_jpegdma_hw_get_num_pipes(struct msm_jpegdma_device *dma)
 }
 
 /*
+ * msm_jpegdma_hw_get_clock_index - Get clock index by name
+ * @dma: Pointer to dma device.
+ * @clk_name: clock name.
+ */
+static int msm_jpegdma_hw_get_clock_index(struct msm_jpegdma_device *dma,
+		const char *clk_name)
+{
+	uint32_t i = 0;
+
+	for (i = 0; i < dma->num_clk; i++) {
+		if (!strcmp(clk_name, dma->jpeg_clk_info[i].clk_name))
+			return i;
+	}
+	return -EINVAL;
+}
+
+/*
  * msm_jpegdma_hw_reset - Reset jpeg dma core.
  * @dma: Pointer to dma device.
  */
@@ -188,9 +219,9 @@ static int msm_jpegdma_hw_reset(struct msm_jpegdma_device *dma)
 }
 
 /*
-* msm_jpegdma_hw_halt - Halt jpeg dma core.
-* @dma: Pointer to dma device.
-*/
+ * msm_jpegdma_hw_halt - Halt jpeg dma core.
+ * @dma: Pointer to dma device.
+ */
 static int msm_jpegdma_hw_halt(struct msm_jpegdma_device *dma)
 {
 	unsigned long time;
@@ -210,9 +241,9 @@ static int msm_jpegdma_hw_halt(struct msm_jpegdma_device *dma)
 }
 
 /*
-* msm_jpegdma_hw_run - Enable dma processing.
-* @dma: Pointer to dma device.
-*/
+ * msm_jpegdma_hw_run - Enable dma processing.
+ * @dma: Pointer to dma device.
+ */
 static int msm_jpegdma_hw_run(struct msm_jpegdma_device *dma)
 {
 	msm_jpegdma_hw_write_reg(dma, MSM_JPEGDMA_IOMEM_CORE,
@@ -457,7 +488,7 @@ static int msm_jpegdma_hw_fe_1_size(struct msm_jpegdma_device *dma,
 /*
  * msm_jpegdma_hw_fe_0_addr - Set fetch engine 0 address.
  * @dma: Pointer to dma device.
- * @addr: Fetch engine addres.
+ * @addr: Fetch engine address.
  */
 static int msm_jpegdma_hw_fe_0_addr(struct msm_jpegdma_device *dma, u32 addr)
 {
@@ -473,7 +504,7 @@ static int msm_jpegdma_hw_fe_0_addr(struct msm_jpegdma_device *dma, u32 addr)
 /*
  * msm_jpegdma_hw_fe_1_addr - Set fetch engine 1 address.
  * @dma: Pointer to dma device.
- * @addr: Fetch engine addres.
+ * @addr: Fetch engine address.
  */
 static int msm_jpegdma_hw_fe_1_addr(struct msm_jpegdma_device *dma, u32 addr)
 {
@@ -615,7 +646,7 @@ static int msm_jpegdma_hw_we_1_size(struct msm_jpegdma_device *dma,
 /*
  * msm_jpegdma_hw_we_0_addr - Set write engine 0 address.
  * @dma: Pointer to dma device.
- * @addr: Fetch engine addres.
+ * @addr: Fetch engine address.
  */
 static int msm_jpegdma_hw_we_0_addr(struct msm_jpegdma_device *dma, u32 addr)
 {
@@ -631,7 +662,7 @@ static int msm_jpegdma_hw_we_0_addr(struct msm_jpegdma_device *dma, u32 addr)
 /*
  * msm_jpegdma_hw_we_1_addr - Set write engine 1 address.
  * @dma: Pointer to dma device.
- * @addr: Fetch engine addres.
+ * @addr: Fetch engine address.
  */
 static int msm_jpegdma_hw_we_1_addr(struct msm_jpegdma_device *dma, u32 addr)
 {
@@ -716,7 +747,6 @@ static void msm_jpegdma_hw_config_qos(struct msm_jpegdma_device *dma)
 		msm_jpegdma_hw_write_reg(dma, MSM_JPEGDMA_IOMEM_CORE,
 			dma->qos_regs[i].reg, dma->qos_regs[i].val);
 
-	return;
 }
 
 /*
@@ -734,7 +764,6 @@ static void msm_jpegdma_hw_config_vbif(struct msm_jpegdma_device *dma)
 		msm_jpegdma_hw_write_reg(dma, MSM_JPEGDMA_IOMEM_VBIF,
 			dma->vbif_regs[i].reg, dma->vbif_regs[i].val);
 
-	return;
 }
 
 /*
@@ -769,34 +798,42 @@ static void msm_jpegdma_hw_config_mmu_prefetch(struct msm_jpegdma_device *dma,
 }
 
 /*
-* msm_jpegdma_hw_calc_speed - Calculate speed based on framerate and size.
-* @dma: Pointer to dma device.
-* @size: Dma user size configuration.
-* @speed: Calculated speed.
-*/
+ * msm_jpegdma_hw_calc_speed - Calculate speed based on framerate and size.
+ * @dma: Pointer to dma device.
+ * @size: Dma user size configuration.
+ * @speed: Calculated speed.
+ */
 static int msm_jpegdma_hw_calc_speed(struct msm_jpegdma_device *dma,
 	struct msm_jpegdma_size_config *size,
 	struct msm_jpegdma_speed *speed)
 {
 	u64 width;
 	u64 height;
-	u64 real_clock;
+	long real_clock;
 	u64 calc_rate;
+	int core_clk_idx;
 
 	width = size->in_size.width + size->in_size.left;
 	height = size->in_size.height + size->in_size.top;
 
 	calc_rate = (width * height * size->format.depth * size->fps) / 16;
-	real_clock = clk_round_rate(dma->clk[MSM_JPEGDMA_CORE_CLK], calc_rate);
+	core_clk_idx = msm_jpegdma_hw_get_clock_index(dma,
+		MSM_JPEGDMA_CORE_CLK);
+	if (core_clk_idx < 0) {
+		dev_err(dma->dev, "Can get clock index for dma %s\n",
+			MSM_JPEGDMA_CORE_CLK);
+	}
+
+	real_clock = clk_round_rate(dma->clk[core_clk_idx], calc_rate);
 	if (real_clock < 0) {
 		dev_err(dma->dev, "Can not round core clock\n");
 		return -EINVAL;
 	}
 
 	speed->bus_ab = calc_rate * 2;
-	speed->bus_ib = (real_clock *
-		(MSM_JPEGDMA_BW_NUM + MSM_JPEGDMA_BW_DEN - 1)) /
-		MSM_JPEGDMA_BW_DEN;
+	speed->bus_ib = jpegdma_do_div((real_clock *
+		(MSM_JPEGDMA_BW_NUM + MSM_JPEGDMA_BW_DEN - 1)),
+		MSM_JPEGDMA_BW_DEN);
 	speed->core_clock = real_clock;
 	dev_dbg(dma->dev, "Speed core clk %llu ab %llu ib %llu fps %d\n",
 		speed->core_clock, speed->bus_ab, speed->bus_ib, size->fps);
@@ -805,11 +842,11 @@ static int msm_jpegdma_hw_calc_speed(struct msm_jpegdma_device *dma,
 }
 
 /*
-* msm_jpegdma_hw_set_speed - Configure clock and bus bandwidth based on
-*   requested speed and dma clients.
-* @size: Jpeg dma size configuration.
-* @speed: Requested dma speed.
-*/
+ * msm_jpegdma_hw_set_speed - Configure clock and bus bandwidth based on
+ *   requested speed and dma clients.
+ * @size: Jpeg dma size configuration.
+ * @speed: Requested dma speed.
+ */
 static int msm_jpegdma_hw_set_speed(struct msm_jpegdma_device *dma,
 	struct msm_jpegdma_size_config *size,
 	struct msm_jpegdma_speed *speed)
@@ -817,6 +854,7 @@ static int msm_jpegdma_hw_set_speed(struct msm_jpegdma_device *dma,
 	struct msm_jpegdma_speed new_sp;
 	struct msm_jpegdma_size_config new_size;
 	int ret;
+	int core_clk_idx;
 
 	if (dma->active_clock_rate >= speed->core_clock)
 		return 0;
@@ -830,7 +868,14 @@ static int msm_jpegdma_hw_set_speed(struct msm_jpegdma_device *dma,
 			return -EINVAL;
 	}
 
-	ret = clk_set_rate(dma->clk[MSM_JPEGDMA_CORE_CLK], new_sp.core_clock);
+	core_clk_idx = msm_jpegdma_hw_get_clock_index(dma,
+		MSM_JPEGDMA_CORE_CLK);
+	if (core_clk_idx < 0) {
+		dev_err(dma->dev, "Can get clock index for dma %s\n",
+			MSM_JPEGDMA_CORE_CLK);
+	}
+
+	ret = clk_set_rate(dma->clk[core_clk_idx], new_sp.core_clock);
 	if (ret < 0) {
 		dev_err(dma->dev, "Fail Core clock rate %d\n", ret);
 		return -EINVAL;
@@ -850,11 +895,11 @@ static int msm_jpegdma_hw_set_speed(struct msm_jpegdma_device *dma,
 }
 
 /*
-* msm_jpegdma_hw_add_plane_offset - Add plane offset to all pipelines.
-* @plane: Jpeg dma plane configuration.
-* @in_offset: Input plane offset.
-* @out_offset: Output plane offset.
-*/
+ * msm_jpegdma_hw_add_plane_offset - Add plane offset to all pipelines.
+ * @plane: Jpeg dma plane configuration.
+ * @in_offset: Input plane offset.
+ * @out_offset: Output plane offset.
+ */
 static int msm_jpegdma_hw_add_plane_offset(struct msm_jpegdma_plane *plane,
 	unsigned int in_offset, unsigned int out_offset)
 {
@@ -869,14 +914,14 @@ static int msm_jpegdma_hw_add_plane_offset(struct msm_jpegdma_plane *plane,
 }
 
 /*
-* msm_jpegdma_hw_calc_config - Calculate plane configuration.
-* @size_cfg: Size configuration.
-* @plane: Plane configuration need to be calculated.
-*/
+ * msm_jpegdma_hw_calc_config - Calculate plane configuration.
+ * @size_cfg: Size configuration.
+ * @plane: Plane configuration need to be calculated.
+ */
 static int msm_jpegdma_hw_calc_config(struct msm_jpegdma_size_config *size_cfg,
 	struct msm_jpegdma_plane *plane)
 {
-	u64 scale_hor, scale_ver, phase;
+	u64 scale_hor, scale_ver, phase = 0;
 	u64 in_width, in_height;
 	u64 out_width, out_height;
 	struct msm_jpegdma_config *config;
@@ -890,13 +935,15 @@ static int msm_jpegdma_hw_calc_config(struct msm_jpegdma_size_config *size_cfg,
 
 	in_width = size_cfg->in_size.width;
 	out_width = size_cfg->out_size.width;
-	scale_hor = (in_width * MSM_JPEGDMA_SCALE_UNI) / out_width;
+	scale_hor = jpegdma_do_div((in_width * MSM_JPEGDMA_SCALE_UNI),
+		out_width);
 	if (scale_hor != MSM_JPEGDMA_SCALE_UNI)
 		config->scale_cfg.enable = 1;
 
 	in_height = size_cfg->in_size.height;
 	out_height = size_cfg->out_size.height;
-	scale_ver = (in_height * MSM_JPEGDMA_SCALE_UNI) / out_height;
+	scale_ver = jpegdma_do_div((in_height * MSM_JPEGDMA_SCALE_UNI),
+		out_height);
 	if (scale_ver != MSM_JPEGDMA_SCALE_UNI)
 		config->scale_cfg.enable = 1;
 
@@ -913,23 +960,23 @@ static int msm_jpegdma_hw_calc_config(struct msm_jpegdma_size_config *size_cfg,
 	config->block_cfg.block = msm_jpegdma_block_sel[i];
 
 	if (plane->active_pipes > 1) {
-		phase = (out_height * scale_ver + (plane->active_pipes - 1)) /
-			plane->active_pipes;
-		phase &= (MSM_JPEGDMA_SCALE_UNI - 1);
-		out_height = (out_height + (plane->active_pipes - 1)) /
-			plane->active_pipes;
+		phase = jpegdma_do_div((out_height * scale_ver +
+			(plane->active_pipes - 1)), plane->active_pipes);
+		phase &= (u64)(MSM_JPEGDMA_SCALE_UNI - 1);
+		out_height = jpegdma_do_div((out_height +
+			(plane->active_pipes - 1)), plane->active_pipes);
 		in_height = (out_height * scale_ver) / MSM_JPEGDMA_SCALE_UNI;
 	}
 
-	config->block_cfg.blocks_per_row = out_width /
-		config->block_cfg.block.width;
+	config->block_cfg.blocks_per_row = (uint32_t) jpegdma_do_div(out_width,
+		config->block_cfg.block.width);
 
 	config->block_cfg.blocks_per_col = out_height;
 
 	config->block_cfg.h_step = config->block_cfg.block.width;
-
-	config->block_cfg.h_step_last = out_width %
-		config->block_cfg.block.width;
+	config->size_cfg.out_size.width = out_width;
+	config->block_cfg.h_step_last = (uint32_t) do_div(out_width,
+		config->block_cfg.block.width);
 	if (!config->block_cfg.h_step_last)
 		config->block_cfg.h_step_last = config->block_cfg.h_step;
 	else
@@ -941,7 +988,6 @@ static int msm_jpegdma_hw_calc_config(struct msm_jpegdma_size_config *size_cfg,
 	config->size_cfg = *size_cfg;
 	config->size_cfg.in_size.width = in_width;
 	config->size_cfg.in_size.height = in_height;
-	config->size_cfg.out_size.width = out_width;
 	config->size_cfg.out_size.height = out_height;
 	config->in_offset = 0;
 	config->out_offset = 0;
@@ -964,10 +1010,10 @@ static int msm_jpegdma_hw_calc_config(struct msm_jpegdma_size_config *size_cfg,
 }
 
 /*
-* msm_jpegdma_hw_check_config - Check configuration based on size is possible.
+ * msm_jpegdma_hw_check_config - Check configuration based on size is possible.
  *@dma: Pointer to dma device.
-* @size_cfg: Size configuration.
-*/
+ * @size_cfg: Size configuration.
+ */
 int msm_jpegdma_hw_check_config(struct msm_jpegdma_device *dma,
 	struct msm_jpegdma_size_config *size_cfg)
 {
@@ -980,14 +1026,16 @@ int msm_jpegdma_hw_check_config(struct msm_jpegdma_device *dma,
 
 	in_width = size_cfg->in_size.width;
 	out_width = size_cfg->out_size.width;
-	scale = ((in_width * MSM_JPEGDMA_SCALE_UNI)) / out_width;
+	scale = jpegdma_do_div(((in_width * MSM_JPEGDMA_SCALE_UNI)),
+		out_width);
 	if (scale < MSM_JPEGDMA_SCALE_UNI)
 		return -EINVAL;
 
 
 	in_height = size_cfg->in_size.height;
 	out_height = size_cfg->out_size.height;
-	scale = (in_height * MSM_JPEGDMA_SCALE_UNI) / out_height;
+	scale = jpegdma_do_div((in_height * MSM_JPEGDMA_SCALE_UNI),
+		out_height);
 	if (scale < MSM_JPEGDMA_SCALE_UNI)
 		return -EINVAL;
 
@@ -995,11 +1043,11 @@ int msm_jpegdma_hw_check_config(struct msm_jpegdma_device *dma,
 }
 
 /*
-* msm_jpegdma_hw_set_config - Set dma configuration based on size.
+ * msm_jpegdma_hw_set_config - Set dma configuration based on size.
  *@dma: Pointer to dma device.
-* @size_cfg: Size configuration.
-* @plane_cfg: Calculated plane configuration.
-*/
+ * @size_cfg: Size configuration.
+ * @plane_cfg: Calculated plane configuration.
+ */
 int msm_jpegdma_hw_set_config(struct msm_jpegdma_device *dma,
 	struct msm_jpegdma_size_config *size_cfg,
 	struct msm_jpegdma_plane_config *plane_cfg)
@@ -1022,13 +1070,20 @@ int msm_jpegdma_hw_set_config(struct msm_jpegdma_device *dma,
 	plane_cfg->plane[0].active_pipes = dma->hw_num_pipes;
 	plane_cfg->plane[0].type = size_cfg->format.planes[0];
 	msm_jpegdma_hw_calc_config(size_cfg, &plane_cfg->plane[0]);
+
+	in_offset = size_cfg->in_offset;
+	out_offset = size_cfg->out_offset;
+
+	msm_jpegdma_hw_add_plane_offset(&plane_cfg->plane[0],
+		in_offset, out_offset);
+
 	if (size_cfg->format.num_planes == 1)
 		return 0;
 
-	in_offset = size_cfg->in_size.scanline *
-		size_cfg->in_size.stride;
-	out_offset = size_cfg->out_size.scanline *
-		size_cfg->out_size.stride;
+	in_offset += (size_cfg->in_size.scanline *
+		size_cfg->in_size.stride);
+	out_offset += (size_cfg->out_size.scanline *
+		size_cfg->out_size.stride);
 
 	memset(&plane_size, 0x00, sizeof(plane_size));
 	for (i = 1; i < size_cfg->format.num_planes; i++) {
@@ -1079,12 +1134,12 @@ int msm_jpegdma_hw_set_config(struct msm_jpegdma_device *dma,
 }
 
 /*
-* msm_jpegdma_hw_start - Start dma processing.
+ * msm_jpegdma_hw_start - Start dma processing.
  *@dma: Pointer to dma device.
-* @addr: Input address.
-* @plane: Plane configuration.
-* @speed: Clock and bus bandwidth configuration.
-*/
+ * @addr: Input address.
+ * @plane: Plane configuration.
+ * @speed: Clock and bus bandwidth configuration.
+ */
 int msm_jpegdma_hw_start(struct msm_jpegdma_device *dma,
 	struct msm_jpegdma_addr *addr,
 	struct msm_jpegdma_plane *plane,
@@ -1160,9 +1215,9 @@ int msm_jpegdma_hw_start(struct msm_jpegdma_device *dma,
 }
 
 /*
-* msm_jpegdma_hw_abort - abort dma processing.
+ * msm_jpegdma_hw_abort - abort dma processing.
  *@dma: Pointer to dma device.
-*/
+ */
 int msm_jpegdma_hw_abort(struct msm_jpegdma_device *dma)
 {
 	int ret;
@@ -1326,47 +1381,72 @@ int msm_jpegdma_hw_get_mem_resources(struct platform_device *pdev,
 }
 
 /*
+ * msm_jpegdma_hw_get_max_downscale - Get max downscale factor from dtsi.
+ * @dma: Pointer to dma device.
+ */
+int msm_jpegdma_hw_get_max_downscale(struct msm_jpegdma_device *dma)
+{
+	int ret;
+	int max_ds_factor;
+
+	ret = of_property_read_u32(dma->dev->of_node,
+		"qcom,max-ds-factor", &max_ds_factor);
+	if (ret < 0) {
+		dev_err(dma->dev, "cannot read qcom,max-ds-factor from dtsi\n");
+		return ret;
+	}
+	dev_dbg(dma->dev, "max_ds_factor is %d\n", max_ds_factor);
+	return max_ds_factor;
+}
+
+/*
  * msm_jpegdma_hw_get_qos - Get dma qos settings from device-tree.
  * @dma: Pointer to dma device.
  */
 int msm_jpegdma_hw_get_qos(struct msm_jpegdma_device *dma)
 {
-	int i;
+	int i, j;
 	int ret;
 	unsigned int cnt;
 	const void *property;
 
-	property = of_get_property(dma->dev->of_node, "qcom,qos-regs", &cnt);
+	property = of_get_property(dma->dev->of_node,
+		"qcom,qos-reg-settings", &cnt);
 	if (!property || !cnt) {
 		dev_dbg(dma->dev, "Missing qos settings\n");
 		return 0;
 	}
-	cnt /= 4;
 
-	dma->qos_regs = kzalloc((sizeof(*dma->qos_regs) * cnt), GFP_KERNEL);
+	cnt /= 4;
+	if (cnt % 2)
+		return -EINVAL;
+
+	dma->qos_regs_num = cnt / 2;
+
+	dma->qos_regs = kzalloc((sizeof(struct jpegdma_reg_cfg) *
+		dma->qos_regs_num), GFP_KERNEL);
 	if (!dma->qos_regs)
 		return -ENOMEM;
 
-	for (i = 0; i < cnt; i++) {
+	for (i = 0, j = 0; i < cnt; i += 2, j++) {
 		ret = of_property_read_u32_index(dma->dev->of_node,
-			"qcom,qos-regs", i,
-			&dma->qos_regs[i].reg);
+			"qcom,qos-reg-settings", i,
+			&dma->qos_regs[j].reg);
 		if (ret < 0) {
-			dev_err(dma->dev, "can not read qos reg %d\n", i);
+			dev_err(dma->dev, "can not read qos reg %d\n", j);
 			goto error;
 		}
 
 		ret = of_property_read_u32_index(dma->dev->of_node,
-			"qcom,qos-settings", i,
-			&dma->qos_regs[i].val);
+			"qcom,qos-reg-settings", i + 1,
+			&dma->qos_regs[j].val);
 		if (ret < 0) {
-			dev_err(dma->dev, "can not read qos setting %d\n", i);
+			dev_err(dma->dev, "can not read qos setting %d\n", j);
 			goto error;
 		}
-		dev_dbg(dma->dev, "Qos idx %d, reg %x val %x\n", i,
-			dma->qos_regs[i].reg, dma->qos_regs[i].val);
+		dev_dbg(dma->dev, "Qos idx %d, reg %x val %x\n", j,
+			dma->qos_regs[j].reg, dma->qos_regs[j].val);
 	}
-	dma->qos_regs_num = cnt;
 
 	return 0;
 error:
@@ -1392,43 +1472,49 @@ void msm_jpegdma_hw_put_qos(struct msm_jpegdma_device *dma)
  */
 int msm_jpegdma_hw_get_vbif(struct msm_jpegdma_device *dma)
 {
-	int i;
+	int i, j;
 	int ret;
 	unsigned int cnt;
 	const void *property;
 
-	property = of_get_property(dma->dev->of_node, "qcom,vbif-regs", &cnt);
+	property = of_get_property(dma->dev->of_node, "qcom,vbif-reg-settings",
+		&cnt);
 	if (!property || !cnt) {
 		dev_dbg(dma->dev, "Missing vbif settings\n");
 		return 0;
 	}
-	cnt /= 4;
 
-	dma->vbif_regs = kzalloc((sizeof(*dma->vbif_regs) * cnt), GFP_KERNEL);
+	cnt /= 4;
+	if (cnt % 2)
+		return -EINVAL;
+
+	dma->vbif_regs_num = cnt / 2;
+
+	dma->vbif_regs = kzalloc((sizeof(struct jpegdma_reg_cfg) *
+		dma->vbif_regs_num), GFP_KERNEL);
 	if (!dma->vbif_regs)
 		return -ENOMEM;
 
-	for (i = 0; i < cnt; i++) {
+	for (i = 0, j = 0; i < cnt; i += 2, j++) {
 		ret = of_property_read_u32_index(dma->dev->of_node,
-			"qcom,vbif-regs", i,
-			&dma->vbif_regs[i].reg);
+			"qcom,vbif-reg-settings", i,
+			&dma->vbif_regs[j].reg);
 		if (ret < 0) {
-			dev_err(dma->dev, "can not read vbif reg %d\n", i);
+			dev_err(dma->dev, "can not read vbif reg %d\n", j);
 			goto error;
 		}
 
 		ret = of_property_read_u32_index(dma->dev->of_node,
-			"qcom,vbif-settings", i,
-			&dma->vbif_regs[i].val);
+			"qcom,vbif-reg-settings", i + 1,
+			&dma->vbif_regs[j].val);
 		if (ret < 0) {
-			dev_err(dma->dev, "can not read vbif setting %d\n", i);
+			dev_err(dma->dev, "can not read vbif setting %d\n", j);
 			goto error;
 		}
 
-		dev_dbg(dma->dev, "Vbif idx %d, reg %x val %x\n", i,
-			dma->vbif_regs[i].reg, dma->vbif_regs[i].val);
+		dev_dbg(dma->dev, "Vbif idx %d, reg %x val %x\n", j,
+			dma->vbif_regs[j].reg, dma->vbif_regs[j].val);
 	}
-	dma->vbif_regs_num = cnt;
 
 	return 0;
 error:
@@ -1454,46 +1540,50 @@ void msm_jpegdma_hw_put_vbif(struct msm_jpegdma_device *dma)
  */
 int msm_jpegdma_hw_get_prefetch(struct msm_jpegdma_device *dma)
 {
-	int i;
+	int i, j;
 	int ret;
 	unsigned int cnt;
 	const void *property;
 
-	property = of_get_property(dma->dev->of_node, "qcom,prefetch-regs",
-		&cnt);
+	property = of_get_property(dma->dev->of_node,
+		"qcom,prefetch-reg-settings", &cnt);
 	if (!property || !cnt) {
 		dev_dbg(dma->dev, "Missing prefetch settings\n");
 		return 0;
 	}
-	cnt /= 4;
 
-	dma->prefetch_regs = kcalloc(cnt, sizeof(*dma->prefetch_regs),
-		GFP_KERNEL);
+	cnt /= 4;
+	if (cnt % 2)
+		return -EINVAL;
+
+	dma->prefetch_regs_num = cnt / 2;
+
+	dma->prefetch_regs = kzalloc((sizeof(struct jpegdma_reg_cfg) *
+		dma->prefetch_regs_num), GFP_KERNEL);
 	if (!dma->prefetch_regs)
 		return -ENOMEM;
 
-	for (i = 0; i < cnt; i++) {
+	for (i = 0, j = 0; i < cnt; i += 2, j++) {
 		ret = of_property_read_u32_index(dma->dev->of_node,
-			"qcom,prefetch-regs", i,
-			&dma->prefetch_regs[i].reg);
+			"qcom,prefetch-reg-settings", i,
+			&dma->prefetch_regs[j].reg);
 		if (ret < 0) {
-			dev_err(dma->dev, "can not read prefetch reg %d\n", i);
+			dev_err(dma->dev, "can not read prefetch reg %d\n", j);
 			goto error;
 		}
 
 		ret = of_property_read_u32_index(dma->dev->of_node,
-			"qcom,prefetch-settings", i,
-			&dma->prefetch_regs[i].val);
+			"qcom,prefetch-reg-settings", i + 1,
+			&dma->prefetch_regs[j].val);
 		if (ret < 0) {
 			dev_err(dma->dev, "can not read prefetch setting %d\n",
-				i);
+				j);
 			goto error;
 		}
 
-		dev_dbg(dma->dev, "Prefetch idx %d, reg %x val %x\n", i,
-			dma->prefetch_regs[i].reg, dma->prefetch_regs[i].val);
+		dev_dbg(dma->dev, "Prefetch idx %d, reg %x val %x\n", j,
+			dma->prefetch_regs[j].reg, dma->prefetch_regs[j].val);
 	}
-	dma->prefetch_regs_num = cnt;
 
 	return 0;
 error:
@@ -1524,7 +1614,7 @@ int msm_jpegdma_hw_get_capabilities(struct msm_jpegdma_device *dma)
 	mutex_lock(&dma->lock);
 
 	/* enable all the regulators */
-	ret = msm_camera_regulator_enable(dma->vdd,
+	ret = msm_camera_regulator_enable(dma->dma_vdd,
 			dma->num_reg, true);
 	if (ret < 0) {
 		dev_err(dma->dev, "Fail to enable regulators\n");
@@ -1547,14 +1637,14 @@ int msm_jpegdma_hw_get_capabilities(struct msm_jpegdma_device *dma)
 		dma->jpeg_clk_info, dma->clk,
 		dma->num_clk, false);
 	/* disable all the regulators */
-	msm_camera_regulator_enable(dma->vdd, dma->num_reg, false);
+	msm_camera_regulator_enable(dma->dma_vdd, dma->num_reg, false);
 
 	mutex_unlock(&dma->lock);
 
 	return 0;
 
 error_clocks:
-	msm_camera_regulator_enable(dma->vdd, dma->num_reg, false);
+	msm_camera_regulator_enable(dma->dma_vdd, dma->num_reg, false);
 error_regulators_get:
 	mutex_unlock(&dma->lock);
 	return ret;
@@ -1577,7 +1667,7 @@ int msm_jpegdma_hw_get(struct msm_jpegdma_device *dma)
 
 		dev_dbg(dma->dev, "msm_jpegdma_hw_get E\n");
 		/* enable all the regulators */
-		ret = msm_camera_regulator_enable(dma->vdd,
+		ret = msm_camera_regulator_enable(dma->dma_vdd,
 				dma->num_reg, true);
 		if (ret < 0) {
 			dev_err(dma->dev, "Fail to enable regulators\n");
@@ -1598,6 +1688,9 @@ int msm_jpegdma_hw_get(struct msm_jpegdma_device *dma)
 		msm_jpegdma_hw_config_qos(dma);
 		msm_jpegdma_hw_config_vbif(dma);
 
+		msm_camera_register_threaded_irq(dma->pdev, dma->irq, NULL,
+			msm_jpegdma_hw_irq, IRQF_ONESHOT | IRQF_TRIGGER_RISING,
+			dev_name(&dma->pdev->dev), dma);
 		msm_jpegdma_hw_enable_irq(dma);
 
 		ret = msm_jpegdma_hw_reset(dma);
@@ -1620,7 +1713,7 @@ error_hw_reset:
 	msm_camera_clk_enable(&dma->pdev->dev, dma->jpeg_clk_info,
 		dma->clk, dma->num_clk, false);
 error_clocks:
-	msm_camera_regulator_enable(dma->vdd, dma->num_reg, false);
+	msm_camera_regulator_enable(dma->dma_vdd, dma->num_reg, false);
 error_regulators_get:
 	mutex_unlock(&dma->lock);
 	return ret;
@@ -1636,7 +1729,9 @@ error_regulators_get:
 void msm_jpegdma_hw_put(struct msm_jpegdma_device *dma)
 {
 	mutex_lock(&dma->lock);
-	BUG_ON(dma->ref_count == 0);
+
+	if (WARN_ON(!dma->ref_count))
+		goto err;
 
 	if (--dma->ref_count == 0) {
 		msm_jpegdma_hw_halt(dma);
@@ -1650,10 +1745,11 @@ void msm_jpegdma_hw_put(struct msm_jpegdma_device *dma)
 		msm_camera_clk_enable(&dma->pdev->dev, dma->jpeg_clk_info,
 			dma->clk, dma->num_clk, false);
 		/* disable all the regulators */
-		msm_camera_regulator_enable(dma->vdd, dma->num_reg, false);
+		msm_camera_regulator_enable(dma->dma_vdd, dma->num_reg, false);
 	}
 	/* Reset clock rate, need to be updated on next processing */
 	dma->active_clock_rate = -1;
+err:
 	mutex_unlock(&dma->lock);
 }
 
@@ -1666,7 +1762,7 @@ void msm_jpegdma_hw_put(struct msm_jpegdma_device *dma)
  */
 static int msm_jpegdma_hw_attach_iommu(struct msm_jpegdma_device *dma)
 {
-	int ret;
+	int ret = -EINVAL;
 
 	mutex_lock(&dma->lock);
 
@@ -1710,6 +1806,7 @@ error:
 static void msm_jpegdma_hw_detach_iommu(struct msm_jpegdma_device *dma)
 {
 	mutex_lock(&dma->lock);
+
 	if (dma->iommu_attached_cnt == 0) {
 		dev_err(dma->dev, "There is no attached device\n");
 		mutex_unlock(&dma->lock);
@@ -1720,6 +1817,7 @@ static void msm_jpegdma_hw_detach_iommu(struct msm_jpegdma_device *dma)
 		cam_smmu_ops(dma->iommu_hndl, CAM_SMMU_DETACH);
 		cam_smmu_destroy_handle(dma->iommu_hndl);
 	}
+
 	mutex_unlock(&dma->lock);
 }
 
@@ -1747,7 +1845,7 @@ int msm_jpegdma_hw_map_buffer(struct msm_jpegdma_device *dma, int fd,
 	buf->fd = fd;
 
 	ret = cam_smmu_get_phy_addr(dma->iommu_hndl, buf->fd,
-		CAM_SMMU_MAP_RW, &buf->addr, &buf->size);
+		CAM_SMMU_MAP_RW, &buf->addr, (size_t *)&buf->size);
 	if (ret < 0) {
 		dev_err(dma->dev, "Can not get physical address\n");
 		goto error_get_phy;

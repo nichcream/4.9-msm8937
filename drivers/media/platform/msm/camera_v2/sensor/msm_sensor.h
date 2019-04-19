@@ -1,4 +1,4 @@
-/* Copyright (c) 2011-2015, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2011-2016, 2018, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -54,9 +54,9 @@ enum msm_sensor_state_t {
 };
 
 struct msm_sensor_fn_t {
-	int (*sensor_config)(struct msm_sensor_ctrl_t *, void __user *);
+	int (*sensor_config)(struct msm_sensor_ctrl_t *, void *);
 #ifdef CONFIG_COMPAT
-	int (*sensor_config32)(struct msm_sensor_ctrl_t *, void __user *);
+	int (*sensor_config32)(struct msm_sensor_ctrl_t *, void *);
 #endif
 	int (*sensor_power_down)(struct msm_sensor_ctrl_t *);
 	int (*sensor_power_up)(struct msm_sensor_ctrl_t *);
@@ -88,9 +88,11 @@ struct msm_sensor_ctrl_t {
 	enum msm_camera_stream_type_t camera_stream_type;
 	uint32_t set_mclk_23880000;
 	uint8_t is_csid_tg_mode;
+	uint32_t is_secure;
+	uint8_t bypass_video_node_creation;
 };
 
-int msm_sensor_config(struct msm_sensor_ctrl_t *s_ctrl, void __user *argp);
+int msm_sensor_config(struct msm_sensor_ctrl_t *s_ctrl, void *argp);
 
 int msm_sensor_power_up(struct msm_sensor_ctrl_t *s_ctrl);
 

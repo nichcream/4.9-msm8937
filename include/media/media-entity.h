@@ -623,11 +623,6 @@ void media_gobj_destroy(struct media_gobj *gobj);
 int media_entity_pads_init(struct media_entity *entity, u16 num_pads,
 		      struct media_pad *pads);
 
-static inline int media_entity_init(struct media_entity *entity, u16 num_pads,
-		      struct media_pad *pads, u16 n) {
-	return media_entity_pads_init(entity, num_pads, pads);
-}
-
 /**
  * media_entity_cleanup() - free resources associated with an entity
  *

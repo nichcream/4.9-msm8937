@@ -1,4 +1,4 @@
-/* Copyright (c) 2012-2015, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2012-2018, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -106,7 +106,7 @@ void *msm_jpeg_hw_pingpong_active_buffer(
 	return (void *) buf_p;
 }
 
-struct msm_jpeg_hw_cmd hw_cmd_irq_get_status[] = {
+static struct msm_jpeg_hw_cmd hw_cmd_irq_get_status[] = {
 	/* type, repeat n times, offset, mask, data or pdata */
 	{MSM_JPEG_HW_CMD_TYPE_READ, 1, JPEG_IRQ_STATUS_ADDR,
 		JPEG_IRQ_STATUS_BMSK, {0} },
@@ -115,11 +115,12 @@ struct msm_jpeg_hw_cmd hw_cmd_irq_get_status[] = {
 int msm_jpeg_hw_irq_get_status(void *base)
 {
 	uint32_t n_irq_status = 0;
+
 	n_irq_status = msm_jpeg_hw_read(&hw_cmd_irq_get_status[0], base);
 	return n_irq_status;
 }
 
-struct msm_jpeg_hw_cmd hw_cmd_irq_get_dmastatus[] = {
+static struct msm_jpeg_hw_cmd hw_cmd_irq_get_dmastatus[] = {
 	/* type, repeat n times, offset, mask, data or pdata */
 	{MSM_JPEG_HW_CMD_TYPE_READ, 1, JPEGDMA_IRQ_STATUS_ADDR,
 		JPEGDMA_IRQ_STATUS_BMSK, {0} },
@@ -128,15 +129,16 @@ struct msm_jpeg_hw_cmd hw_cmd_irq_get_dmastatus[] = {
 int msm_jpegdma_hw_irq_get_status(void *base)
 {
 	uint32_t n_irq_status = 0;
+
 	n_irq_status = msm_jpeg_hw_read(&hw_cmd_irq_get_dmastatus[0], base);
 	return n_irq_status;
 }
 
-struct msm_jpeg_hw_cmd hw_cmd_encode_output_size[] = {
+static struct msm_jpeg_hw_cmd hw_cmd_encode_output_size[] = {
 	/* type, repeat n times, offset, mask, data or pdata */
 	{MSM_JPEG_HW_CMD_TYPE_READ, 1,
 	JPEG_ENCODE_OUTPUT_SIZE_STATUS_ADDR,
-	JPEG_ENCODE_OUTPUT_SIZE_STATUS_BMSK, {0} } ,
+	JPEG_ENCODE_OUTPUT_SIZE_STATUS_BMSK, {0} },
 };
 
 long msm_jpeg_hw_encode_output_size(void *base)
@@ -175,7 +177,7 @@ void msm_jpegdma_hw_irq_clear(uint32_t mask, uint32_t data, void *base)
 	msm_jpeg_hw_write(&cmd_irq_clear, base);
 }
 
-struct msm_jpeg_hw_cmd hw_cmd_fe_ping_update[] = {
+static struct msm_jpeg_hw_cmd hw_cmd_fe_ping_update[] = {
 	/* type, repeat n times, offset, mask, data or pdata */
 	{MSM_JPEG_HW_CMD_TYPE_WRITE, 1, JPEG_IRQ_MASK_ADDR,
 		JPEG_IRQ_MASK_BMSK, {JPEG_IRQ_ALLSOURCES_ENABLE} },
@@ -236,10 +238,9 @@ void msm_jpeg_hw_fe_buffer_update(struct msm_jpeg_hw_buf *p_input,
 		/* ensure write is done */
 		wmb();
 	}
-	return;
 }
 
-struct msm_jpeg_hw_cmd hw_dma_cmd_fe_ping_update[] = {
+static struct msm_jpeg_hw_cmd hw_dma_cmd_fe_ping_update[] = {
 	/* type, repeat n times, offset, mask, data or pdata */
 	{MSM_JPEG_HW_CMD_TYPE_WRITE, 1, JPEGDMA_IRQ_MASK_ADDR,
 		JPEGDMA_IRQ_MASK_BMSK, {JPEG_IRQ_ALLSOURCES_ENABLE} },
@@ -281,7 +282,7 @@ void msm_jpegdma_hw_fe_buffer_update(struct msm_jpeg_hw_buf *p_input,
 	wmb();
 }
 
-struct msm_jpeg_hw_cmd hw_cmd_fe_start[] = {
+static struct msm_jpeg_hw_cmd hw_cmd_fe_start[] = {
 	/* type, repeat n times, offset, mask, data or pdata */
 	{MSM_JPEG_HW_CMD_TYPE_WRITE, 1, JPEG_CMD_ADDR,
 		JPEG_CMD_BMSK, {JPEG_OFFLINE_CMD_START} },
@@ -291,10 +292,9 @@ void msm_jpeg_hw_fe_start(void *base)
 {
 	msm_jpeg_hw_write(&hw_cmd_fe_start[0], base);
 
-	return;
 }
 
-struct msm_jpeg_hw_cmd hw_cmd_we_ping_update[] = {
+static struct msm_jpeg_hw_cmd hw_cmd_we_ping_update[] = {
 	/* type, repeat n times, offset, mask, data or pdata */
 	{MSM_JPEG_HW_CMD_TYPE_WRITE, 1, JPEG_PLN0_WR_PNTR_ADDR,
 		JPEG_PLN0_WR_PNTR_BMSK, {0} },
@@ -307,15 +307,21 @@ struct msm_jpeg_hw_cmd hw_cmd_we_ping_update[] = {
 void msm_jpeg_decode_status(void *base)
 {
 	uint32_t data;
-	data = msm_camera_io_r(base + JPEG_DECODE_MCUS_DECODED_STATUS);
+
+	data = msm_camera_io_r(
+		(void __iomem *)(base + JPEG_DECODE_MCUS_DECODED_STATUS));
 	JPEG_DBG_HIGH("Decode MCUs decode status %u", data);
-	data = msm_camera_io_r(base + JPEG_DECODE_BITS_CONSUMED_STATUS);
+	data = msm_camera_io_r(
+		(void __iomem *)(base + JPEG_DECODE_BITS_CONSUMED_STATUS));
 	JPEG_DBG_HIGH("Decode bits consumed status %u", data);
-	data = msm_camera_io_r(base + JPEG_DECODE_PRED_Y_STATE);
+	data = msm_camera_io_r(
+		(void __iomem *)(base + JPEG_DECODE_PRED_Y_STATE));
 	JPEG_DBG_HIGH("Decode prediction Y state %u", data);
-	data = msm_camera_io_r(base + JPEG_DECODE_PRED_C_STATE);
+	data = msm_camera_io_r(
+		(void __iomem *)(base + JPEG_DECODE_PRED_C_STATE));
 	JPEG_DBG_HIGH("Decode prediction C state %u", data);
-	data = msm_camera_io_r(base + JPEG_DECODE_RSM_STATE);
+	data = msm_camera_io_r(
+		(void __iomem *)(base + JPEG_DECODE_RSM_STATE));
 	JPEG_DBG_HIGH("Decode prediction RSM state %u", data);
 }
 
@@ -346,10 +352,9 @@ void msm_jpeg_hw_we_buffer_update(struct msm_jpeg_hw_buf *p_input,
 			p_input->pln2_addr);
 		msm_jpeg_hw_write(&tmp_hw_cmd, base);
 	}
-	return;
 }
 
-struct msm_jpeg_hw_cmd hw_dma_cmd_we_ping_update[] = {
+static struct msm_jpeg_hw_cmd hw_dma_cmd_we_ping_update[] = {
 	/* type, repeat n times, offset, mask, data or pdata */
 	{MSM_JPEG_HW_CMD_TYPE_WRITE, 1, JPEGDMA_CMD_ADDR,
 		JPEGDMA_CMD_BMSK, {JPEGDMA_CMD_CLEAR_WRITE_PLN_QUEUES} },
@@ -389,7 +394,7 @@ void msm_jpegdma_hw_we_buffer_update(struct msm_jpeg_hw_buf *p_input,
 	wmb();
 }
 
-struct msm_jpeg_hw_cmd hw_cmd_fe_mmu_prefetch[] = {
+static struct msm_jpeg_hw_cmd hw_cmd_fe_mmu_prefetch[] = {
 	/* type, repeat n times, offset, mask, data or pdata */
 	{MSM_JPEG_HW_CMD_TYPE_WRITE, 1, MSM_JPEG_S0_MMU_PF_ADDR_MIN,
 		MSM_JPEG_S0_MMU_PF_ADDR_MIN_BMSK, {0} },
@@ -486,7 +491,7 @@ void msm_jpeg_hw_fe_mmu_prefetch(struct msm_jpeg_hw_buf *buf, void *base,
 	wmb();
 }
 
-struct msm_jpeg_hw_cmd hw_cmd_we_mmu_prefetch[] = {
+static struct msm_jpeg_hw_cmd hw_cmd_we_mmu_prefetch[] = {
 	/* type, repeat n times, offset, mask, data or pdata */
 	{MSM_JPEG_HW_CMD_TYPE_WRITE, 1, MSM_JPEG_S1_MMU_PF_ADDR_MIN,
 		MSM_JPEG_S1_MMU_PF_ADDR_MIN_BMSK, {0} },
@@ -603,7 +608,7 @@ void msm_jpeg_hw_we_mmu_prefetch(struct msm_jpeg_hw_buf *buf, void *base,
 	wmb();
 }
 
-struct msm_jpeg_hw_cmd hw_dma_cmd_fe_mmu_prefetch[] = {
+static struct msm_jpeg_hw_cmd hw_dma_cmd_fe_mmu_prefetch[] = {
 	/* type, repeat n times, offset, mask, data or pdata */
 	{MSM_JPEG_HW_CMD_TYPE_WRITE, 1, MSM_JPEGDMA_S0_MMU_PF_ADDR_MIN,
 		MSM_JPEGDMA_S0_MMU_PF_ADDR_MIN_BMSK, {0} },
@@ -654,7 +659,7 @@ void msm_jpegdma_hw_fe_mmu_prefetch(struct msm_jpeg_hw_buf *buf, void *base)
 	wmb();
 }
 
-struct msm_jpeg_hw_cmd hw_dma_cmd_we_mmu_prefetch[] = {
+static struct msm_jpeg_hw_cmd hw_dma_cmd_we_mmu_prefetch[] = {
 	/* type, repeat n times, offset, mask, data or pdata */
 	{MSM_JPEG_HW_CMD_TYPE_WRITE, 1, MSM_JPEGDMA_S1_MMU_PF_ADDR_MIN,
 		MSM_JPEGDMA_S1_MMU_PF_ADDR_MIN_BMSK, {0} },
@@ -705,7 +710,7 @@ void msm_jpegdma_hw_we_mmu_prefetch(struct msm_jpeg_hw_buf *buf, void *base)
 	wmb();
 }
 
-struct msm_jpeg_hw_cmd hw_cmd_reset[] = {
+static struct msm_jpeg_hw_cmd hw_cmd_reset[] = {
 	/* type, repeat n times, offset, mask, data or pdata */
 	{MSM_JPEG_HW_CMD_TYPE_WRITE, 1, JPEG_IRQ_MASK_ADDR,
 		JPEG_IRQ_MASK_BMSK, {JPEG_IRQ_DISABLE_ALL} },
@@ -737,9 +742,8 @@ void msm_jpeg_hw_reset(void *base, int size)
 	/* ensure write is done */
 	wmb();
 
-	return;
 }
-struct msm_jpeg_hw_cmd hw_cmd_reset_dma[] = {
+static struct msm_jpeg_hw_cmd hw_cmd_reset_dma[] = {
 	/* type, repeat n times, offset, mask, data or pdata */
 	{MSM_JPEG_HW_CMD_TYPE_WRITE, 1, JPEGDMA_IRQ_MASK_ADDR,
 		JPEGDMA_IRQ_MASK_BMSK, {JPEGDMA_IRQ_DISABLE_ALL} },
@@ -771,7 +775,6 @@ void msm_jpeg_hw_reset_dma(void *base, int size)
 	/* ensure write is done */
 	wmb();
 
-	return;
 }
 
 uint32_t msm_jpeg_hw_read(struct msm_jpeg_hw_cmd *hw_cmd_p,
@@ -782,7 +785,7 @@ uint32_t msm_jpeg_hw_read(struct msm_jpeg_hw_cmd *hw_cmd_p,
 
 	paddr = jpeg_region_base + hw_cmd_p->offset;
 
-	data = msm_camera_io_r(paddr);
+	data = msm_camera_io_r((void __iomem *)paddr);
 	data &= hw_cmd_p->mask;
 
 	return data;
@@ -799,15 +802,15 @@ void msm_jpeg_hw_write(struct msm_jpeg_hw_cmd *hw_cmd_p,
 	if (hw_cmd_p->mask == 0xffffffff) {
 		old_data = 0;
 	} else {
-		old_data = msm_camera_io_r(paddr);
+		old_data = msm_camera_io_r((void __iomem *)paddr);
 		old_data &= ~hw_cmd_p->mask;
 	}
 
 	new_data = hw_cmd_p->data & hw_cmd_p->mask;
 	new_data |= old_data;
-	JPEG_DBG("%s:%d] %p %08x\n", __func__, __LINE__,
+	JPEG_DBG("%s:%d] %pK %08x\n", __func__, __LINE__,
 		paddr, new_data);
-	msm_camera_io_w(new_data, paddr);
+	msm_camera_io_w(new_data, (void __iomem *)paddr);
 }
 
 int msm_jpeg_hw_wait(struct msm_jpeg_hw_cmd *hw_cmd_p, int m_us,
@@ -834,6 +837,7 @@ int msm_jpeg_hw_wait(struct msm_jpeg_hw_cmd *hw_cmd_p, int m_us,
 void msm_jpeg_hw_delay(struct msm_jpeg_hw_cmd *hw_cmd_p, int m_us)
 {
 	int tm = hw_cmd_p->n;
+
 	while (tm) {
 		udelay(m_us);
 		tm--;
@@ -847,7 +851,7 @@ int msm_jpeg_hw_exec_cmds(struct msm_jpeg_hw_cmd *hw_cmd_p, uint32_t m_cmds,
 	uint32_t data;
 
 	while (m_cmds--) {
-		if (hw_cmd_p->offset > max_size) {
+		if (hw_cmd_p->offset >= max_size) {
 			JPEG_PR_ERR("%s:%d] %d exceed hw region %d\n", __func__,
 				__LINE__, hw_cmd_p->offset, max_size);
 			return -EFAULT;
@@ -903,26 +907,46 @@ int msm_jpeg_hw_exec_cmds(struct msm_jpeg_hw_cmd *hw_cmd_p, uint32_t m_cmds,
 
 void msm_jpeg_io_dump(void *base, int size)
 {
-	char line_str[128], *p_str;
+	char line_str[128];
 	void __iomem *addr = (void __iomem *)base;
 	int i;
-	u32 *p = (u32 *) addr;
+	void __iomem *p = addr;
+	size_t offset = 0;
+	size_t used = 0;
+	size_t min_range = 0;
+	size_t sizeof_line_str = sizeof(line_str);
 	u32 data;
-	JPEG_DBG_HIGH("%s:%d] %p %d", __func__, __LINE__, addr, size);
+
+	JPEG_DBG_HIGH("%s:%d] %pK %d", __func__, __LINE__, addr, size);
 	line_str[0] = '\0';
-	p_str = line_str;
 	for (i = 0; i < size/4; i++) {
 		if (i % 4 == 0) {
-			snprintf(p_str, 12, "%08lx: ", (unsigned long)p);
-			p_str += 10;
+			used = snprintf(line_str + offset,
+				sizeof_line_str - offset, "%pK ", p);
+			if ((used < min_range) ||
+				(offset + used >= sizeof_line_str)) {
+				JPEG_PR_ERR("%s\n", line_str);
+				offset = 0;
+				line_str[0] = '\0';
+			} else {
+				offset += used;
+			}
 		}
 		data = msm_camera_io_r(p++);
-		snprintf(p_str, 12, "%08x ", data);
-		p_str += 9;
+		used = snprintf(line_str + offset,
+			sizeof_line_str - offset, "%08x ", data);
+		if ((used < min_range) ||
+			(offset + used >= sizeof_line_str)) {
+			JPEG_PR_ERR("%s\n", line_str);
+			offset = 0;
+			line_str[0] = '\0';
+		} else {
+			offset += used;
+		}
 		if ((i + 1) % 4 == 0) {
 			JPEG_DBG_HIGH("%s\n", line_str);
 			line_str[0] = '\0';
-			p_str = line_str;
+			offset = 0;
 		}
 	}
 	if (line_str[0] != '\0')

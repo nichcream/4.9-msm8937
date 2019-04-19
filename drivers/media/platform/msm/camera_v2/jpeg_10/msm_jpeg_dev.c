@@ -1,4 +1,4 @@
-/* Copyright (c) 2012-2016, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2012-2018, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -31,6 +31,8 @@
 
 #define MSM_JPEG_NAME "jpeg"
 #define DEV_NAME_LEN 10
+
+static char devname[DEV_NAME_LEN];
 
 static int msm_jpeg_open(struct inode *inode, struct file *filp)
 {
@@ -107,22 +109,6 @@ static const struct file_operations msm_jpeg_fops = {
 #endif
 };
 
-
-int msm_jpeg_subdev_init(struct v4l2_subdev *jpeg_sd)
-{
-	int rc;
-	struct msm_jpeg_device *pgmn_dev =
-		(struct msm_jpeg_device *)jpeg_sd->host_priv;
-
-	JPEG_DBG("%s:%d: jpeg_sd=0x%lx pgmn_dev=0x%pK\n",
-		__func__, __LINE__, (unsigned long)jpeg_sd,
-		pgmn_dev);
-	rc = __msm_jpeg_open(pgmn_dev);
-	JPEG_DBG("%s:%d: rc=%d\n",
-		__func__, __LINE__, rc);
-	return rc;
-}
-
 static long msm_jpeg_subdev_ioctl(struct v4l2_subdev *sd,
 	unsigned int cmd, void *arg)
 {
@@ -139,16 +125,6 @@ static long msm_jpeg_subdev_ioctl(struct v4l2_subdev *sd,
 	rc = __msm_jpeg_ioctl(pgmn_dev, cmd, (unsigned long)arg);
 	pr_debug("%s: X\n", __func__);
 	return rc;
-}
-
-void msm_jpeg_subdev_release(struct v4l2_subdev *jpeg_sd)
-{
-	int rc;
-	struct msm_jpeg_device *pgmn_dev =
-		(struct msm_jpeg_device *)jpeg_sd->host_priv;
-	JPEG_DBG("%s:pgmn_dev=0x%pK", __func__, pgmn_dev);
-	rc = __msm_jpeg_release(pgmn_dev);
-	JPEG_DBG("%s:rc=%d", __func__, rc);
 }
 
 static const struct v4l2_subdev_core_ops msm_jpeg_subdev_core_ops = {
@@ -185,7 +161,6 @@ static int msm_jpeg_init_dev(struct platform_device *pdev)
 	struct msm_jpeg_device *msm_jpeg_device_p;
 	const struct of_device_id *device_id;
 	const struct msm_jpeg_priv_data *priv_data;
-	char devname[DEV_NAME_LEN];
 
 	msm_jpeg_device_p = kzalloc(sizeof(struct msm_jpeg_device), GFP_ATOMIC);
 	if (!msm_jpeg_device_p) {
@@ -261,7 +236,7 @@ static int msm_jpeg_init_dev(struct platform_device *pdev)
 		goto fail_4;
 	}
 
-	platform_set_drvdata(pdev, &msm_jpeg_device_p);
+	platform_set_drvdata(pdev, msm_jpeg_device_p);
 
 	JPEG_DBG("%s %s%d: success\n", __func__, MSM_JPEG_NAME, pdev->id);
 
@@ -328,6 +303,7 @@ static struct platform_driver msm_jpeg_driver = {
 static int __init msm_jpeg_driver_init(void)
 {
 	int rc;
+
 	rc = platform_driver_register(&msm_jpeg_driver);
 	return rc;
 }

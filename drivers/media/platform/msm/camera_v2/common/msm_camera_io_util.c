@@ -1,4 +1,5 @@
-/* Copyright (c) 2011-2014, The Linux Foundataion. All rights reserved.
+/* Copyright (c) 2011-2014, 2017-2018, The Linux Foundation.
+ * All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -27,13 +28,13 @@
 
 void msm_camera_io_w(u32 data, void __iomem *addr)
 {
-	CDBG("%s: 0x%p %08x\n", __func__,  (addr), (data));
+	CDBG("%s: 0x%pK %08x\n", __func__,  (addr), (data));
 	writel_relaxed((data), (addr));
 }
 
 /* This API is to write a block of data
-* to same address
-*/
+ * to same address
+ */
 int32_t msm_camera_io_w_block(const u32 *addr, void __iomem *base,
 	u32 len)
 {
@@ -43,7 +44,7 @@ int32_t msm_camera_io_w_block(const u32 *addr, void __iomem *base,
 		return -EINVAL;
 
 	for (i = 0; i < len; i++) {
-		CDBG("%s: len =%d val=%x base =%p\n", __func__,
+		CDBG("%s: len =%d val=%x base =%pK\n", __func__,
 			len, addr[i], base);
 		writel_relaxed(addr[i], base);
 	}
@@ -51,8 +52,9 @@ int32_t msm_camera_io_w_block(const u32 *addr, void __iomem *base,
 }
 
 /* This API is to write a block of registers
-*  which is like a 2 dimensional array table with
-*  register offset and data */
+ *  which is like a 2 dimensional array table with
+ *  register offset and data
+ */
 int32_t msm_camera_io_w_reg_block(const u32 *addr, void __iomem *base,
 	u32 len)
 {
@@ -62,7 +64,7 @@ int32_t msm_camera_io_w_reg_block(const u32 *addr, void __iomem *base,
 		return -EINVAL;
 
 	for (i = 0; i < len; i = i + 2) {
-		CDBG("%s: len =%d val=%x base =%p reg=%x\n", __func__,
+		CDBG("%s: len =%d val=%x base =%pK reg=%x\n", __func__,
 			len, addr[i + 1], base,  addr[i]);
 		writel_relaxed(addr[i + 1], base + addr[i]);
 	}
@@ -71,7 +73,7 @@ int32_t msm_camera_io_w_reg_block(const u32 *addr, void __iomem *base,
 
 void msm_camera_io_w_mb(u32 data, void __iomem *addr)
 {
-	CDBG("%s: 0x%p %08x\n", __func__,  (addr), (data));
+	CDBG("%s: 0x%pK %08x\n", __func__,  (addr), (data));
 	/* ensure write is done */
 	wmb();
 	writel_relaxed((data), (addr));
@@ -89,7 +91,7 @@ int32_t msm_camera_io_w_mb_block(const u32 *addr, void __iomem *base, u32 len)
 	for (i = 0; i < len; i++) {
 		/* ensure write is done */
 		wmb();
-		CDBG("%s: len =%d val=%x base =%p\n", __func__,
+		CDBG("%s: len =%d val=%x base =%pK\n", __func__,
 			len, addr[i], base);
 		writel_relaxed(addr[i], base);
 	}
@@ -102,7 +104,7 @@ u32 msm_camera_io_r(void __iomem *addr)
 {
 	uint32_t data = readl_relaxed(addr);
 
-	CDBG("%s: 0x%p %08x\n", __func__,  (addr), (data));
+	CDBG("%s: 0x%pK %08x\n", __func__,  (addr), (data));
 	return data;
 }
 
@@ -114,15 +116,15 @@ u32 msm_camera_io_r_mb(void __iomem *addr)
 	data = readl_relaxed(addr);
 	/* ensure read is done */
 	rmb();
-	CDBG("%s: 0x%p %08x\n", __func__,  (addr), (data));
+	CDBG("%s: 0x%pK %08x\n", __func__,  (addr), (data));
 	return data;
 }
 
-void msm_camera_io_memcpy_toio(void __iomem *dest_addr,
-	void __iomem *src_addr, u32 len)
+static void msm_camera_io_memcpy_toio(void __iomem *dest_addr,
+	void *src_addr, u32 len)
 {
 	int i;
-	u32 *d = (u32 *) dest_addr;
+	u32 __iomem *d = (u32 __iomem *) dest_addr;
 	u32 *s = (u32 *) src_addr;
 
 	for (i = 0; i < len; i++)
@@ -175,35 +177,45 @@ int32_t msm_camera_io_poll_value_wmask(void __iomem *addr, u32 wait_data,
 
 void msm_camera_io_dump(void __iomem *addr, int size, int enable)
 {
-	char line_str[128], *p_str;
+	char line_str[128];
 	int i;
-	u32 *p = (u32 *) addr;
+	ptrdiff_t p = 0;
+	size_t offset = 0, used = 0;
 	u32 data;
 
-	CDBG("%s: addr=%p size=%d\n", __func__, addr, size);
+	CDBG("%s: addr=%pK size=%d\n", __func__, addr, size);
 
-	if (!p || (size <= 0) || !enable)
+	if (!addr || (size <= 0) || !enable)
 		return;
 
 	line_str[0] = '\0';
-	p_str = line_str;
 	for (i = 0; i < size/4; i++) {
 		if (i % 4 == 0) {
-#ifdef CONFIG_COMPAT
-			snprintf(p_str, 20, "%016lx: ", (unsigned long) p);
-			p_str += 18;
-#else
-			snprintf(p_str, 12, "%08lx: ", (unsigned long) p);
-			p_str += 10;
-#endif
+			used = snprintf(line_str + offset,
+				sizeof(line_str) - offset, "0x%04tX: ", p);
+			if (offset + used >= sizeof(line_str)) {
+				pr_err("%s\n", line_str);
+				offset = 0;
+				line_str[0] = '\0';
+			} else {
+				offset += used;
+			}
 		}
-		data = readl_relaxed(p++);
-		snprintf(p_str, 12, "%08x ", data);
-		p_str += 9;
+		data = readl_relaxed(addr + p);
+		p = p + 4;
+		used = snprintf(line_str + offset,
+			sizeof(line_str) - offset, "%08x ", data);
+		if (offset + used >= sizeof(line_str)) {
+			pr_err("%s\n", line_str);
+			offset = 0;
+			line_str[0] = '\0';
+		} else {
+			offset += used;
+		}
 		if ((i + 1) % 4 == 0) {
 			pr_err("%s\n", line_str);
 			line_str[0] = '\0';
-			p_str = line_str;
+			offset = 0;
 		}
 	}
 	if (line_str[0] != '\0')
@@ -216,12 +228,12 @@ void msm_camera_io_dump_wstring_base(void __iomem *addr,
 {
 	int i, u = sizeof(struct msm_cam_dump_string_info);
 
-	pr_debug("%s: addr=%p data=%p size=%d u=%d, cnt=%d\n", __func__,
+	pr_debug("%s: addr=%pK data=%pK size=%d u=%d, cnt=%d\n", __func__,
 		addr, dump_data, size, u,
 		(size/u));
 
 	if (!addr || (size <= 0) || !dump_data) {
-		pr_err("%s: addr=%p data=%p size=%d\n", __func__,
+		pr_err("%s: addr=%pK data=%pK size=%d\n", __func__,
 			addr, dump_data, size);
 		return;
 	}
@@ -231,20 +243,21 @@ void msm_camera_io_dump_wstring_base(void __iomem *addr,
 }
 
 void msm_camera_io_memcpy(void __iomem *dest_addr,
-	void __iomem *src_addr, u32 len)
+	void *src_addr, u32 len)
 {
-	CDBG("%s: %p %p %d\n", __func__, dest_addr, src_addr, len);
+	CDBG("%s: %pK %pK %d\n", __func__, dest_addr, src_addr, len);
 	msm_camera_io_memcpy_toio(dest_addr, src_addr, len / 4);
 }
 
 void msm_camera_io_memcpy_mb(void __iomem *dest_addr,
-	void __iomem *src_addr, u32 len)
+	void *src_addr, u32 len)
 {
 	int i;
-	u32 *d = (u32 *) dest_addr;
+	u32 __iomem *d = (u32 __iomem *) dest_addr;
 	u32 *s = (u32 *) src_addr;
 	/* This is generic function called who needs to register
-	writes with memory barrier */
+	 * writes with memory barrier
+	 */
 	wmb();
 	for (i = 0; i < (len / 4); i++) {
 		msm_camera_io_w(*s++, d++);
@@ -394,8 +407,14 @@ int msm_camera_config_vreg(struct device *dev, struct camera_vreg_t *cam_vreg,
 		pr_err("%s:%d vreg sequence invalid\n", __func__, __LINE__);
 		return -EINVAL;
 	}
+
 	if (!num_vreg_seq)
 		num_vreg_seq = num_vreg;
+
+	if ((cam_vreg == NULL) && num_vreg_seq) {
+		pr_err("%s:%d cam_vreg NULL\n", __func__, __LINE__);
+		return -EINVAL;
+	}
 
 	if (config) {
 		for (i = 0; i < num_vreg_seq; i++) {
@@ -408,7 +427,7 @@ int msm_camera_config_vreg(struct device *dev, struct camera_vreg_t *cam_vreg,
 			curr_vreg = &cam_vreg[j];
 			reg_ptr[j] = regulator_get(dev,
 				curr_vreg->reg_name);
-			if (IS_ERR(reg_ptr[j])) {
+			if (IS_ERR_OR_NULL(reg_ptr[j])) {
 				pr_err("%s: %s get failed\n",
 					 __func__,
 					 curr_vreg->reg_name);
@@ -430,6 +449,7 @@ int msm_camera_config_vreg(struct device *dev, struct camera_vreg_t *cam_vreg,
 					rc = regulator_set_load(
 						reg_ptr[j],
 						curr_vreg->op_mode);
+					rc = 0;
 					if (rc < 0) {
 						pr_err(
 						"%s:%s set optimum mode fail\n",
@@ -514,7 +534,7 @@ int msm_camera_enable_vreg(struct device *dev, struct camera_vreg_t *cam_vreg,
 					continue;
 			} else
 				j = i;
-			if (IS_ERR(reg_ptr[j])) {
+			if (IS_ERR_OR_NULL(reg_ptr[j])) {
 				pr_err("%s: %s null regulator\n",
 					__func__, cam_vreg[j].reg_name);
 				goto disable_vreg;
@@ -539,12 +559,16 @@ int msm_camera_enable_vreg(struct device *dev, struct camera_vreg_t *cam_vreg,
 					continue;
 			} else
 				j = i;
-			regulator_disable(reg_ptr[j]);
-			if (cam_vreg[j].delay > 20)
-				msleep(cam_vreg[j].delay);
-			else if (cam_vreg[j].delay)
-				usleep_range(cam_vreg[j].delay * 1000,
-					(cam_vreg[j].delay * 1000) + 1000);
+			if (reg_ptr[j]) {
+				regulator_disable(reg_ptr[j]);
+				if (cam_vreg[j].delay > 20)
+					msleep(cam_vreg[j].delay);
+				else if (cam_vreg[j].delay)
+					usleep_range(
+						cam_vreg[j].delay * 1000,
+						(cam_vreg[j].delay * 1000)
+						+ 1000);
+			}
 		}
 	}
 	return rc;
@@ -575,7 +599,6 @@ void msm_camera_bus_scale_cfg(uint32_t bus_perf_client,
 		pr_err("%s: Bus Client NOT Registered!!!\n", __func__);
 		return;
 	}
-
 	switch (perf_setting) {
 	case S_EXIT:
 		rc = msm_bus_scale_client_update_request(bus_perf_client, 1);
@@ -728,7 +751,7 @@ int msm_camera_request_gpio_table(struct gpio *gpio_tbl, uint8_t size,
 	int rc = 0, i = 0, err = 0;
 
 	if (!gpio_tbl || !size) {
-		pr_err("%s:%d invalid gpio_tbl %p / size %d\n", __func__,
+		pr_err("%s:%d invalid gpio_tbl %pK / size %d\n", __func__,
 			__LINE__, gpio_tbl, size);
 		return -EINVAL;
 	}
@@ -742,10 +765,10 @@ int msm_camera_request_gpio_table(struct gpio *gpio_tbl, uint8_t size,
 				gpio_tbl[i].flags, gpio_tbl[i].label);
 			if (err) {
 				/*
-				* After GPIO request fails, contine to
-				* apply new gpios, outout a error message
-				* for driver bringup debug
-				*/
+				 * After GPIO request fails, contine to
+				 * apply new gpios, outout a error message
+				 * for driver bringup debug
+				 */
 				pr_err("%s:%d gpio %d:%s request fails\n",
 					__func__, __LINE__,
 					gpio_tbl[i].gpio, gpio_tbl[i].label);
@@ -772,7 +795,7 @@ int msm_camera_get_dt_reg_settings(struct device_node *of_node,
 	unsigned int cnt;
 
 	if (!of_node || !dt_prop_name || !size || !reg_s) {
-		pr_err("%s: Error invalid args %p:%p:%p:%p\n",
+		pr_err("%s: Error invalid args %pK:%pK:%pK:%pK\n",
 			__func__, size, reg_s, of_node, dt_prop_name);
 		return -EINVAL;
 	}

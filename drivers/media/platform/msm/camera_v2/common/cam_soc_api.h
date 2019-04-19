@@ -1,4 +1,4 @@
-/* Copyright (c) 2015-2016, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2015-2016, 2018, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -21,6 +21,7 @@
 #include <linux/regulator/consumer.h>
 #include <linux/interrupt.h>
 #include <linux/slab.h>
+#include <linux/reset.h>
 #include <soc/qcom/camera2.h>
 
 enum cam_bus_client {
@@ -32,6 +33,11 @@ enum cam_bus_client {
 	CAM_BUS_CLIENT_JPEG_DEC,
 	CAM_BUS_CLIENT_JPEG_DMA,
 	CAM_BUS_CLIENT_MAX
+};
+
+struct msm_cam_regulator {
+	const char *name;
+	struct regulator *vdd;
 };
 
 /**
@@ -48,11 +54,30 @@ enum cam_bus_client {
  *
  * @return Status of operation. Negative in case of error. Zero otherwise.
  */
-
 int msm_camera_get_clk_info(struct platform_device *pdev,
 			struct msm_cam_clk_info **clk_info,
 			struct clk ***clk_ptr,
 			size_t *num_clk);
+
+/**
+ * @brief      : Gets clock information from dtsi
+ *
+ * This function extracts the clocks information for a specific
+ * i2c device
+ *
+ * @param dev   : i2c device to get clocks information
+ * @param clk_info   : Pointer to populate clock information array
+ * @param clk_ptr   : Pointer to populate clock resource pointers
+ * @param num_clk: Pointer to populate the number of clocks
+ *                 extracted from dtsi
+ *
+ * @return Status of operation. Negative in case of error. Zero otherwise.
+ */
+int msm_camera_i2c_dev_get_clk_info(struct device *dev,
+			struct msm_cam_clk_info **clk_info,
+			struct clk ***clk_ptr,
+			size_t *num_clk);
+
 /**
  * @brief      : Gets clock information and rates from dtsi
  *
@@ -92,6 +117,23 @@ int msm_camera_get_clk_info_and_rates(
 int msm_camera_put_clk_info(struct platform_device *pdev,
 				struct msm_cam_clk_info **clk_info,
 				struct clk ***clk_ptr, int cnt);
+
+/**
+ * @brief      : Puts clock information
+ *
+ * This function releases the memory allocated for the clocks
+ *
+ * @param dev   : Pointer to i2c device
+ * @param clk_info   : Pointer to release the allocated memory
+ * @param clk_ptr   : Pointer to release the clock resources
+ * @param cnt   : Number of clk resources
+ *
+ * @return Status of operation. Negative in case of error. Zero otherwise.
+ */
+int msm_camera_i2c_dev_put_clk_info(struct device *dev,
+			struct msm_cam_clk_info **clk_info,
+			struct clk ***clk_ptr, int cnt);
+
 /**
  * @brief      : Puts clock information
  *
@@ -106,7 +148,6 @@ int msm_camera_put_clk_info(struct platform_device *pdev,
  *
  * @return Status of operation. Negative in case of error. Zero otherwise.
  */
-
 int msm_camera_put_clk_info_and_rates(struct platform_device *pdev,
 		struct msm_cam_clk_info **clk_info,
 		struct clk ***clk_ptr, uint32_t ***clk_rates,
@@ -134,19 +175,46 @@ int msm_camera_clk_enable(struct device *dev,
 /**
  * @brief      : Set clock rate
  *
- * This function sets the rate for a specified clock
+ * This function sets the rate for a specified clock and
+ * returns the rounded value
  *
  * @param dev   : Device to get clocks information
  * @param clk   : Pointer to clock to set rate
  * @param clk_rate   : Rate to be set
  *
- * @return Status of operation. Negative in case of error. Zero otherwise.
+ * @return Status of operation. Negative in case of error. clk rate otherwise.
  */
 
-int msm_camera_clk_set_rate(struct device *dev,
+long msm_camera_clk_set_rate(struct device *dev,
 				struct clk *clk,
 				long clk_rate);
 
+/**
+ * @brief      : Gets reset info
+ *
+ * This function extracts the reset information for a specific
+ * platform device
+ *
+ * @param pdev   : platform device to get reset information
+ * @param micro_iface_reset : Pointer to populate the reset names
+ *
+ * @return Status of operation. Negative in case of error. Zero otherwise.
+ */
+
+int msm_camera_get_reset_info(struct platform_device *pdev,
+			struct reset_control **micro_iface_reset);
+/**
+ * @brief      : Sets flags of a clock
+ *
+ * This function will set the flags for a specified clock
+ *
+ * @param clk   : Pointer to clock to set flags for
+ * @param flags : The flags to set
+ *
+ * @return Status of operation.
+ */
+
+int msm_camera_set_clk_flags(struct clk *clk, unsigned long flags);
 /**
  * @brief      : Gets regulator info
  *
@@ -154,29 +222,47 @@ int msm_camera_clk_set_rate(struct device *dev,
  * platform device
  *
  * @param pdev   : platform device to get regulator information
- * @param vdd: Pointer to populate the regulator names
+ * @param vdd_info: Pointer to populate the regulator names
  * @param num_reg: Pointer to populate the number of regulators
  *                 extracted from dtsi
  *
  * @return Status of operation. Negative in case of error. Zero otherwise.
  */
+
 int msm_camera_get_regulator_info(struct platform_device *pdev,
-		struct regulator ***vddd, int *num_reg);
+		struct msm_cam_regulator **vdd_info, int *num_reg);
 /**
  * @brief      : Enable/Disable the regultors
  *
  * This function enables/disables the regulators for a specific
  * platform device
  *
- * @param vdd: Pointer to list of regulators
+ * @param vdd_info: Pointer to list of regulators
  * @param cnt: Number of regulators to enable/disable
  * @param enable: Flags specifies either enable/disable
  *
  * @return Status of operation. Negative in case of error. Zero otherwise.
  */
 
-int msm_camera_regulator_enable(struct regulator **vdd,
+int msm_camera_regulator_enable(struct msm_cam_regulator *vdd_info,
 				int cnt, int enable);
+
+/**
+ * @brief      : set the regultors mode
+ *
+ * This function sets the regulators for a specific
+ * mode. say:REGULATOR_MODE_FAST/REGULATOR_MODE_NORMAL
+ *
+ * @param vdd_info: Pointer to list of regulators
+ * @param cnt: Number of regulators to enable/disable
+ * @param mode: Flags specifies either enable/disable
+ *
+ * @return Status of operation. Negative in case of error. Zero otherwise.
+ */
+
+int msm_camera_regulator_set_mode(struct msm_cam_regulator *vdd_info,
+				int cnt, bool mode);
+
 
 /**
  * @brief      : Release the regulators
@@ -184,13 +270,12 @@ int msm_camera_regulator_enable(struct regulator **vdd,
  * This function releases the regulator resources.
  *
  * @param pdev: Pointer to platform device
- * @param vdd: Pointer to list of regulators
+ * @param vdd_info: Pointer to list of regulators
  * @param cnt: Number of regulators to release
  */
 
 void msm_camera_put_regulators(struct platform_device *pdev,
-							struct regulator ***vdd,
-							int cnt);
+	struct msm_cam_regulator **vdd_info, int cnt);
 /**
  * @brief      : Get the IRQ resource
  *
@@ -248,7 +333,7 @@ int msm_camera_register_threaded_irq(struct platform_device *pdev,
 						irq_handler_t handler_fn,
 						irq_handler_t thread_fn,
 						unsigned long irqflags,
-						char *irq_name,
+						const char *irq_name,
 						void *dev);
 
 /**

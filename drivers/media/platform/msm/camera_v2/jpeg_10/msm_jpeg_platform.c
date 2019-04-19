@@ -1,4 +1,4 @@
-/* Copyright (c) 2012-2016, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2012-2016, 2018, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -33,7 +33,7 @@
 #define JPEG_DT_PROP_CNT 2
 
 
-int msm_jpeg_get_clock_index(struct msm_jpeg_device *pgmn_dev,
+static int msm_jpeg_get_clock_index(struct msm_jpeg_device *pgmn_dev,
 	const char *clk_name)
 {
 	uint32_t i = 0;
@@ -49,7 +49,7 @@ int msm_jpeg_platform_set_clk_rate(struct msm_jpeg_device *pgmn_dev,
 		long clk_rate)
 {
 	int rc = 0;
-	uint32_t msm_jpeg_idx;
+	int msm_jpeg_idx;
 
 	/* retrieve clock index from list of clocks */
 	msm_jpeg_idx = msm_jpeg_get_clock_index(pgmn_dev,
@@ -69,7 +69,6 @@ int msm_jpeg_platform_set_clk_rate(struct msm_jpeg_device *pgmn_dev,
 void msm_jpeg_platform_p2v(int iommu_hdl, int fd)
 {
 	cam_smmu_put_phy_addr(iommu_hdl, fd);
-	return;
 }
 
 uint32_t msm_jpeg_platform_v2p(struct msm_jpeg_device *pgmn_dev, int fd,
@@ -107,51 +106,69 @@ static void set_vbif_params(struct msm_jpeg_device *pgmn_dev,
 	 void *jpeg_vbif_base)
 {
 	msm_camera_io_w(0x1,
-		jpeg_vbif_base + JPEG_VBIF_CLKON);
+		(void __iomem *)(jpeg_vbif_base + JPEG_VBIF_CLKON));
 
 	if (pgmn_dev->hw_version != JPEG_8994) {
 		msm_camera_io_w(0x10101010,
-			jpeg_vbif_base + JPEG_VBIF_IN_RD_LIM_CONF0);
+			(void __iomem *)(jpeg_vbif_base +
+			JPEG_VBIF_IN_RD_LIM_CONF0));
 		msm_camera_io_w(0x10101010,
-			jpeg_vbif_base + JPEG_VBIF_IN_RD_LIM_CONF1);
+			(void __iomem *)(jpeg_vbif_base +
+			JPEG_VBIF_IN_RD_LIM_CONF1));
 		msm_camera_io_w(0x10101010,
-			jpeg_vbif_base + JPEG_VBIF_IN_RD_LIM_CONF2);
+			(void __iomem *)(jpeg_vbif_base +
+			JPEG_VBIF_IN_RD_LIM_CONF2));
 		msm_camera_io_w(0x10101010,
-			jpeg_vbif_base + JPEG_VBIF_IN_WR_LIM_CONF0);
+			(void __iomem *)(jpeg_vbif_base +
+			JPEG_VBIF_IN_WR_LIM_CONF0));
 		msm_camera_io_w(0x10101010,
-			jpeg_vbif_base + JPEG_VBIF_IN_WR_LIM_CONF1);
+			(void __iomem *)(jpeg_vbif_base +
+			JPEG_VBIF_IN_WR_LIM_CONF1));
 		msm_camera_io_w(0x10101010,
-			jpeg_vbif_base + JPEG_VBIF_IN_WR_LIM_CONF2);
+			(void __iomem *)(jpeg_vbif_base +
+			JPEG_VBIF_IN_WR_LIM_CONF2));
 		msm_camera_io_w(0x00001010,
-			jpeg_vbif_base + JPEG_VBIF_OUT_RD_LIM_CONF0);
+			(void __iomem *)(jpeg_vbif_base +
+			JPEG_VBIF_OUT_RD_LIM_CONF0));
 		msm_camera_io_w(0x00000110,
-			jpeg_vbif_base + JPEG_VBIF_OUT_WR_LIM_CONF0);
+			(void __iomem *)(jpeg_vbif_base +
+			JPEG_VBIF_OUT_WR_LIM_CONF0));
 		msm_camera_io_w(0x00000707,
-			jpeg_vbif_base + JPEG_VBIF_DDR_OUT_MAX_BURST);
+			(void __iomem *)(jpeg_vbif_base +
+			JPEG_VBIF_DDR_OUT_MAX_BURST));
 		msm_camera_io_w(0x00000FFF,
-			jpeg_vbif_base + JPEG_VBIF_OUT_AXI_AOOO_EN);
+			(void __iomem *)(jpeg_vbif_base +
+			JPEG_VBIF_OUT_AXI_AOOO_EN));
 		msm_camera_io_w(0x0FFF0FFF,
-			jpeg_vbif_base + JPEG_VBIF_OUT_AXI_AOOO);
+			(void __iomem *)(jpeg_vbif_base +
+			JPEG_VBIF_OUT_AXI_AOOO));
 		msm_camera_io_w(0x2222,
-			jpeg_vbif_base + JPEG_VBIF_OUT_AXI_AMEMTYPE_CONF1);
+			(void __iomem *)(jpeg_vbif_base +
+			JPEG_VBIF_OUT_AXI_AMEMTYPE_CONF1));
 	}
 
 	msm_camera_io_w(0x7,
-		jpeg_vbif_base + JPEG_VBIF_OCMEM_OUT_MAX_BURST);
+		(void __iomem *)(jpeg_vbif_base +
+		JPEG_VBIF_OCMEM_OUT_MAX_BURST));
 	msm_camera_io_w(0x00000030,
-		jpeg_vbif_base + JPEG_VBIF_ARB_CTL);
+		(void __iomem *)(jpeg_vbif_base +
+		JPEG_VBIF_ARB_CTL));
 
-	/*FE and WE QOS configuration need to be set when
-	QOS RR arbitration is enabled*/
+	/* FE and WE QOS configuration need to be set when
+	 * QOS RR arbitration is enabled
+	 */
 	if (pgmn_dev->hw_version != JPEG_8974_V1)
 		msm_camera_io_w(0x00000003,
-				jpeg_vbif_base + JPEG_VBIF_ROUND_ROBIN_QOS_ARB);
+				(void __iomem *)(jpeg_vbif_base +
+				JPEG_VBIF_ROUND_ROBIN_QOS_ARB));
 	else
 		msm_camera_io_w(0x00000001,
-				jpeg_vbif_base + JPEG_VBIF_ROUND_ROBIN_QOS_ARB);
+				(void __iomem *)(jpeg_vbif_base +
+				JPEG_VBIF_ROUND_ROBIN_QOS_ARB));
 
 	msm_camera_io_w(0x22222222,
-		jpeg_vbif_base + JPEG_VBIF_OUT_AXI_AMEMTYPE_CONF0);
+		(void __iomem *)(jpeg_vbif_base +
+		JPEG_VBIF_OUT_AXI_AMEMTYPE_CONF0));
 
 }
 
@@ -171,7 +188,7 @@ static int32_t msm_jpeg_set_init_dt_parms(struct msm_jpeg_device *pgmn_dev,
 	void *base)
 {
 	struct device_node *of_node;
-	int32_t i = 0 , rc = 0;
+	int32_t i = 0, rc = 0;
 	uint32_t *dt_reg_settings = NULL;
 	uint32_t dt_count = 0;
 
@@ -209,12 +226,13 @@ static int32_t msm_jpeg_set_init_dt_parms(struct msm_jpeg_device *pgmn_dev,
 			return -EINVAL;
 		}
 		for (i = 0; i < dt_count; i = i + 2) {
-			JPEG_DBG("%s:%d] %p %08x\n",
+			JPEG_DBG("%s:%d] %pK %08x\n",
 					__func__, __LINE__,
 					base + dt_reg_settings[i],
 					dt_reg_settings[i + 1]);
 			msm_camera_io_w(dt_reg_settings[i + 1],
-					base + dt_reg_settings[i]);
+					(void __iomem *)
+					(base + dt_reg_settings[i]));
 		}
 		kfree(dt_reg_settings);
 	}
@@ -224,6 +242,7 @@ static int32_t msm_jpeg_set_init_dt_parms(struct msm_jpeg_device *pgmn_dev,
 static int msm_jpeg_attach_iommu(struct msm_jpeg_device *pgmn_dev)
 {
 	int rc;
+
 	rc = cam_smmu_ops(pgmn_dev->iommu_hdl, CAM_SMMU_ATTACH);
 	if (rc < 0) {
 		JPEG_PR_ERR("%s: Device attach failed\n", __func__);
@@ -295,8 +314,8 @@ int msm_jpeg_platform_init(irqreturn_t (*handler)(int, void *),
 		goto err_reg_irq_fail;
 	}
 
-	pgmn_dev->hw_version = msm_camera_io_r(pgmn_dev->base +
-		JPEG_HW_VERSION);
+	pgmn_dev->hw_version = msm_camera_io_r((void __iomem *)(pgmn_dev->base +
+		JPEG_HW_VERSION));
 	JPEG_DBG_HIGH("%s:%d] jpeg HW version 0x%x", __func__, __LINE__,
 		pgmn_dev->hw_version);
 	pgmn_dev->state = MSM_JPEG_INIT;
@@ -318,8 +337,9 @@ err_reg_enable:
 int msm_jpeg_platform_setup(struct msm_jpeg_device *pgmn_dev)
 {
 	int rc = -1;
+	int i;
 	struct resource *jpeg_irq_res;
-	void *jpeg_base, *vbif_base;
+	void __iomem *jpeg_base, *vbif_base;
 	struct platform_device *pdev = pgmn_dev->pdev;
 
 	/* get the jpeg hardware device address */
@@ -353,6 +373,19 @@ int msm_jpeg_platform_setup(struct msm_jpeg_device *pgmn_dev)
 		JPEG_PR_ERR("%s: failed to get the clocks\n", __func__);
 		rc = -ENXIO;
 		goto err_jpeg_clk;
+	}
+
+	/*set memcore and mem periphery logic flags to 0*/
+	for (i = 0; i < pgmn_dev->num_clk; i++) {
+		if ((strcmp(pgmn_dev->jpeg_clk_info[i].clk_name,
+				"core_clk") == 0) ||
+			(strcmp(pgmn_dev->jpeg_clk_info[i].clk_name,
+				"mmss_camss_jpeg_axi_clk") == 0)) {
+			msm_camera_set_clk_flags(pgmn_dev->jpeg_clk[i],
+				CLKFLAG_NORETAIN_MEM);
+			msm_camera_set_clk_flags(pgmn_dev->jpeg_clk[i],
+				CLKFLAG_NORETAIN_PERIPH);
+		}
 	}
 
 	/* get all the regulators information */
@@ -401,8 +434,8 @@ int msm_jpeg_platform_setup(struct msm_jpeg_device *pgmn_dev)
 		goto err_res_size;
 	}
 
-	pgmn_dev->base = jpeg_base;
-	pgmn_dev->vbif_base = vbif_base;
+	pgmn_dev->base = (__force void *)jpeg_base;
+	pgmn_dev->vbif_base = (__force void *)vbif_base;
 	pgmn_dev->jpeg_irq_res = jpeg_irq_res;
 
 	return 0;
@@ -435,10 +468,12 @@ void msm_jpeg_platform_cleanup(struct msm_jpeg_device *pgmn_dev)
 	msm_camera_put_clk_info(pgmn_dev->pdev, &pgmn_dev->jpeg_clk_info,
 		&pgmn_dev->jpeg_clk, pgmn_dev->num_clk);
 	/* release the jpeg device memory */
-	msm_camera_put_reg_base(pgmn_dev->pdev, pgmn_dev->vbif_base,
+	msm_camera_put_reg_base(pgmn_dev->pdev,
+		(void __iomem *)pgmn_dev->vbif_base,
 		"jpeg_vbif", false);
 	/* release the jpeg vbif device memory */
-	msm_camera_put_reg_base(pgmn_dev->pdev, pgmn_dev->base,
+	msm_camera_put_reg_base(pgmn_dev->pdev,
+		(void __iomem *)pgmn_dev->base,
 		"jpeg_hw", true);
 }
 
