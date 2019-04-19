@@ -14,4 +14,10 @@ config MACH_XIAOMI_LAND
 	help
 	  Support for Redmi 3S/3X
 
+config MACH_XIAOMI_SANTONI
+	bool "santoni board"
+	select MACH_XIAOMI_MSM8937
+	help
+	  Support for Redmi 4X
+
 endmenu
