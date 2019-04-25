@@ -15,6 +15,7 @@
 
 #include "msm8937.dtsi"
 #include "msm8937-pmi8950-qrd-sku1-land.dtsi"
+#include "land/msm8937-pmi8950-qrd-sku1-overlay.dtsi"
 
 / {
 	model = "Qualcomm Technologies, Inc. MSM8937-PMI8950 QRD SKU1";
@@ -75,5 +76,3 @@
 		status="disabled";
 	};
 };
-
-#include "land/msm8937-pmi8950-qrd-sku1-overlay.dtsi"
