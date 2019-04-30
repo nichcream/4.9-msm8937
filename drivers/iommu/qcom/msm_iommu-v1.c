@@ -1124,48 +1124,6 @@ static bool msm_iommu_is_iova_coherent(struct iommu_domain *domain,
 	return ret;
 }
 
-static int msm_iommu_add_device(struct device *dev)
-{
-	struct iommu_group *group;
-	struct msm_iommu_master *master = NULL;
-
-	if (dev->archdata.iommu == NULL)
-		return -ENODEV;
-
-	master = dev->archdata.iommu;
-
-	group = iommu_group_get_for_dev(dev);
-	if (IS_ERR(group))
-		return PTR_ERR(group);
-
-	return 0;
-}
-
-static void msm_iommu_remove_device(struct device *dev)
-{
-	iommu_group_remove_device(dev);
-}
-
-static struct iommu_group *msm_iommu_device_group(struct device *dev)
-{
-	struct msm_iommu_master *master;
-	struct iommu_group *group;
-
-	group = generic_device_group(dev);
-	if (IS_ERR(group))
-		return group;
-
-	master = msm_iommu_find_master(dev);
-	if (IS_ERR(master)) {
-		iommu_group_put(group);
-		return ERR_CAST(master);
-	}
-
-	iommu_group_set_iommudata(group, &master->ctx_drvdata, NULL);
-
-	return group;
-}
-
 static inline void print_ctx_mem_attr_regs(struct msm_iommu_context_reg regs[])
 {
 	pr_err("MAIR0   = %08x    MAIR1   = %08x\n",
@@ -1574,66 +1532,6 @@ static int msm_iommu_domain_get_attr(struct iommu_domain *domain,
 	return 0;
 }
 
-static int msm_iommu_of_xlate(struct device *dev, struct of_phandle_args *args)
-{
-	struct msm_iommu_drvdata *iommu_drvdata;
-	struct msm_iommu_ctx_drvdata *ctx_drvdata;
-	struct platform_device *pdev, *ctx_pdev;
-	struct msm_iommu_master *master;
-	struct device_node *child;
-	bool found = false;
-
-	if (args->args_count > 2)
-		return -EINVAL;
-
-	dev_dbg(dev, "getting pdev for %s\n", args->np->name);
-
-	pdev = of_find_device_by_node(args->np);
-	if (!pdev) {
-		dev_dbg(dev, "iommu pdev not found\n");
-		return -ENODEV;
-	}
-
-	iommu_drvdata = platform_get_drvdata(pdev);
-	if (!iommu_drvdata)
-		return -ENODEV;
-
-	for_each_child_of_node(args->np, child) {
-		ctx_pdev = of_find_device_by_node(child);
-		if (!ctx_pdev)
-			return -ENODEV;
-
-		ctx_drvdata = platform_get_drvdata(ctx_pdev);
-
-		if (ctx_drvdata->ctx_num == args->args[0]) {
-			found = true;
-			break;
-		}
-	}
-
-	if (!found)
-		return -ENODEV;
-
-	dev_dbg(dev, "found ctx data for %s (num:%d)\n",
-		ctx_drvdata->name, ctx_drvdata->num);
-
-	master = devm_kzalloc(iommu_drvdata->dev, sizeof(*master), GFP_KERNEL);
-	if (!master)
-		return -ENOMEM;
-
-	INIT_LIST_HEAD(&master->list);
-	master->dev = dev;
-	master->iommu_drvdata = iommu_drvdata;
-	master->ctx_drvdata = ctx_drvdata;
-
-	dev_dbg(dev, "adding master for device %s\n", dev_name(dev));
-
-	list_add_tail(&master->list, &iommu_masters);
-	dev->archdata.iommu = master;
-
-	return 0;
-}
-
 #if 0
 static int msm_iommu_dma_supported(struct iommu_domain *domain,
 				  struct device *dev, u64 mask)
@@ -1681,14 +1579,10 @@ static struct iommu_ops msm_iommu_ops = {
 	.map_sg = msm_iommu_map_sg,
 	.iova_to_phys = msm_iommu_iova_to_phys,
 	.is_iova_coherent = msm_iommu_is_iova_coherent,
-	.add_device = msm_iommu_add_device,
-	.remove_device = msm_iommu_remove_device,
-	.device_group = msm_iommu_device_group,
 	.pgsize_bitmap = (SZ_4K | SZ_64K | SZ_2M | SZ_32M | SZ_1G),
 	.get_pgsize_bitmap = msm_iommu_get_pgsize_bitmap,
 	.domain_set_attr = msm_iommu_domain_set_attr,
 	.domain_get_attr = msm_iommu_domain_get_attr,
-	.of_xlate = msm_iommu_of_xlate,
 	//.dma_supported = msm_iommu_dma_supported,
 	.tlbi_domain = msm_iommu_tlbi_domain,
 	.enable_config_clocks	= msm_iommu_enable_clocks,
