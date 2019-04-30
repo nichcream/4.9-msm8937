@@ -1516,8 +1516,6 @@ static int cam_populate_smmu_context_banks(struct device *dev,
 
 	/* set up the iommu mapping for the  context bank */
 	if (type == CAM_QSMMU) {
-#if 0
-		// TODO: Enable once we fix msm_iommu_get_ctx().
 		ctx = msm_iommu_get_ctx(cb->name);
 		if (IS_ERR_OR_NULL(ctx)) {
 			rc = PTR_ERR(ctx);
@@ -1525,9 +1523,6 @@ static int cam_populate_smmu_context_banks(struct device *dev,
 				 cb->name, rc);
 			return -EINVAL;
 		}
-#else
-		ctx = dev;
-#endif
 		CDBG("getting QSMMU ctx : %s\n", cb->name);
 	} else {
 		ctx = dev;
