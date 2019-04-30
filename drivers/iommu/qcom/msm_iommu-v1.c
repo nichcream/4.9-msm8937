@@ -67,13 +67,6 @@
 
 #define MMU_SEP (MMU_IAS - 1)
 
-struct msm_iommu_master {
-	struct list_head list;
-	struct device *dev;
-	struct msm_iommu_drvdata *iommu_drvdata;
-	struct msm_iommu_ctx_drvdata *ctx_drvdata;
-};
-
 static LIST_HEAD(iommu_masters);
 
 static DEFINE_MUTEX(msm_iommu_lock);
@@ -605,6 +598,10 @@ static void __program_context(struct msm_iommu_drvdata *iommu_drvdata,
 	SET_CB_SCTLR_M(cb_base, ctx, 1);
 
 	mb();
+}
+
+void msm_iommu_add_master(struct msm_iommu_master *master) {
+	list_add_tail(&master->list, &iommu_masters);
 }
 
 static struct msm_iommu_master *msm_iommu_find_master(struct device *dev)

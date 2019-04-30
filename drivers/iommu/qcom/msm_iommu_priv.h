@@ -230,6 +230,13 @@ struct msm_iommu_ctx_drvdata {
 	bool needs_secure_map;
 };
 
+struct msm_iommu_master {
+	struct list_head list;
+	struct device *dev;
+	struct msm_iommu_drvdata *iommu_drvdata;
+	struct msm_iommu_ctx_drvdata *ctx_drvdata;
+};
+
 /**
  * struct iommu_access_ops - Callbacks for accessing IOMMU
  * @iommu_bus_vote:     Vote for bus bandwidth
@@ -255,6 +262,7 @@ void iommu_halt(const struct msm_iommu_drvdata *iommu_drvdata);
 void iommu_resume(const struct msm_iommu_drvdata *iommu_drvdata);
 
 int msm_iommu_init(struct device *dev);
+void msm_iommu_add_master(struct msm_iommu_master *master);
 
 void print_ctx_regs(struct msm_iommu_context_reg regs[]);
 
