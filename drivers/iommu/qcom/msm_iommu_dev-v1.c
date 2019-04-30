@@ -748,8 +748,6 @@ static int msm_iommu_probe(struct platform_device *pdev)
 				global_client_irq, ret);
 	}
 
-	INIT_LIST_HEAD(&drvdata->masters);
-
 	idr_init(&drvdata->asid_idr);
 
 	ret = of_platform_populate(np, msm_iommu_ctx_match_table, NULL, dev);
@@ -871,6 +869,12 @@ static int msm_iommu_ctx_parse_dt(struct platform_device *pdev,
 	if (of_property_read_u32_array(pdev->dev.of_node, "qcom,iommu-ctx-sids",
 				       ctx_drvdata->sids,
 				       nsid / sizeof(*ctx_drvdata->sids))) {
+		ret = -EINVAL;
+		goto out;
+	}
+
+	if (of_property_read_u32(pdev->dev.of_node, "qcom,ctx-num",
+				 &ctx_drvdata->ctx_num)) {
 		ret = -EINVAL;
 		goto out;
 	}
