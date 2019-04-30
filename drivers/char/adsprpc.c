@@ -4002,6 +4002,7 @@ static int fastrpc_cb_legacy_probe(struct device *dev)
 {
 	struct fastrpc_channel_ctx *chan;
 	struct fastrpc_session_ctx *first_sess = NULL, *sess = NULL;
+	struct device *cb_dev;
 	const char *name;
 	unsigned int *sids = NULL, sids_size = 0;
 	int err = 0, ret = 0, i;
@@ -4043,13 +4044,15 @@ static int fastrpc_cb_legacy_probe(struct device *dev)
 	if (ret)
 		goto bail;
 
+	cb_dev = msm_iommu_get_ctx("adsp_shared");
+
 	VERIFY(err, !IS_ERR_OR_NULL(first_sess->smmu.mapping =
-				arm_iommu_create_mapping(msm_iommu_get_bus(dev),
+				arm_iommu_create_mapping(msm_iommu_get_bus(cb_dev),
 						start, 0x78000000)));
 	if (err)
 		goto bail;
 
-	VERIFY(err, !arm_iommu_attach_device(dev, first_sess->smmu.mapping));
+	VERIFY(err, !arm_iommu_attach_device(cb_dev, first_sess->smmu.mapping));
 	if (err)
 		goto bail;
 
@@ -4060,7 +4063,7 @@ static int fastrpc_cb_legacy_probe(struct device *dev)
 			goto bail;
 		sess = &chan->session[chan->sesscount];
 		sess->smmu.cb = sids[i];
-		sess->smmu.dev = dev;
+		sess->smmu.dev = cb_dev;
 		sess->smmu.mapping = first_sess->smmu.mapping;
 		sess->smmu.enabled = 1;
 		sess->used = 0;
