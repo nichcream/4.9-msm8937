@@ -69,7 +69,6 @@
 
 struct msm_iommu_master {
 	struct list_head list;
-	unsigned int ctx_num;
 	struct device *dev;
 	struct msm_iommu_drvdata *iommu_drvdata;
 	struct msm_iommu_ctx_drvdata *ctx_drvdata;
@@ -623,7 +622,7 @@ static struct msm_iommu_master *msm_iommu_find_master(struct device *dev)
 	if (found) {
 		dev_dbg(dev, "found master %s with ctx:%d\n",
 			dev_name(master->dev),
-			master->ctx_num);
+			master->ctx_drvdata->ctx_num);
 		return master;
 	}
 
@@ -1586,8 +1585,6 @@ static int msm_iommu_of_xlate(struct device *dev, struct of_phandle_args *args)
 	struct msm_iommu_master *master;
 	struct device_node *child;
 	bool found = false;
-	u32 val;
-	int ret;
 
 	if (args->args_count > 2)
 		return -EINVAL;
@@ -1611,11 +1608,7 @@ static int msm_iommu_of_xlate(struct device *dev, struct of_phandle_args *args)
 
 		ctx_drvdata = platform_get_drvdata(ctx_pdev);
 
-		ret = of_property_read_u32(child, "qcom,ctx-num", &val);
-		if (ret)
-			return ret;
-
-		if (val == args->args[0]) {
+		if (ctx_drvdata->ctx_num == args->args[0]) {
 			found = true;
 			break;
 		}
@@ -1632,7 +1625,6 @@ static int msm_iommu_of_xlate(struct device *dev, struct of_phandle_args *args)
 		return -ENOMEM;
 
 	INIT_LIST_HEAD(&master->list);
-	master->ctx_num = args->args[0];
 	master->dev = dev;
 	master->iommu_drvdata = iommu_drvdata;
 	master->ctx_drvdata = ctx_drvdata;
