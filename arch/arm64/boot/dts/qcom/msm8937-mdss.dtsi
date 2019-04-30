@@ -185,11 +185,9 @@
 
 		smmu_mdp_unsec: qcom,smmu_mdp_unsec_cb {
 			compatible = "qcom,smmu_mdp_unsec";
-			iommus = <&apps_iommu 18>; /* For NS ctx bank */
 		};
 		smmu_mdp_sec: qcom,smmu_mdp_sec_cb {
 			compatible = "qcom,smmu_mdp_sec";
-			iommus = <&apps_iommu 3>; /* For SEC Ctx Bank */
 		};
 
 		mdss_fb0: qcom,mdss_fb_primary {
