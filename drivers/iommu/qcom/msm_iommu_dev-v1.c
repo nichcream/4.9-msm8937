@@ -88,12 +88,17 @@ struct device *msm_iommu_get_ctx(const char *ctx_name)
 {
 	struct msm_iommu_drvdata *drv;
 	struct device *dev = NULL;
+	struct platform_device *pdev = NULL;
+	struct msm_iommu_master *master = NULL;
+	struct msm_iommu_drvdata *iommu_drvdata = NULL;
 
 	mutex_lock(&iommu_list_lock);
 	list_for_each_entry(drv, &iommu_list, list) {
 		dev = msm_iommu_find_context(drv->dev, ctx_name);
-		if (dev)
+		if (dev) {
+			iommu_drvdata = drv;
 			break;
+		}
 	}
 	mutex_unlock(&iommu_list_lock);
 
@@ -101,8 +106,22 @@ struct device *msm_iommu_get_ctx(const char *ctx_name)
 
 	if (!dev || !dev_get_drvdata(dev)) {
 		pr_debug("Could not find context <%s>\n", ctx_name);
-		dev = ERR_PTR(-EPROBE_DEFER);
+		return ERR_PTR(-EPROBE_DEFER);
 	}
+
+	pdev = to_platform_device(dev);
+
+	master = devm_kzalloc(iommu_drvdata->dev, sizeof(*master), GFP_KERNEL);
+	if (!master)
+		return ERR_PTR(-ENOMEM);
+
+	INIT_LIST_HEAD(&master->list);
+	master->dev = dev;
+	master->ctx_drvdata = platform_get_drvdata(pdev);
+	master->iommu_drvdata = iommu_drvdata;
+	msm_iommu_add_master(master);
+
+	dev->archdata.iommu = master;
 
 	return dev;
 }
