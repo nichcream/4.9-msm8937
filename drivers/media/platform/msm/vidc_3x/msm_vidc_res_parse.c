@@ -1282,7 +1282,7 @@ static int msm_vidc_setup_context_bank(struct context_bank_info *cb,
 			"%s: Invalid Input params\n", __func__);
 		return -EINVAL;
 	}
-	cb->dev = dev;
+	cb->dev = msm_iommu_get_ctx(cb->name);
 
 	bus = msm_iommu_get_bus(cb->dev);
 	if (IS_ERR_OR_NULL(bus)) {
