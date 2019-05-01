@@ -892,12 +892,6 @@ static int msm_iommu_ctx_parse_dt(struct platform_device *pdev,
 		goto out;
 	}
 
-	if (of_property_read_u32(pdev->dev.of_node, "qcom,ctx-num",
-				 &ctx_drvdata->ctx_num)) {
-		ret = -EINVAL;
-		goto out;
-	}
-
 	ctx_drvdata->nsid = nsid;
 	ctx_drvdata->asid = -1;
 
