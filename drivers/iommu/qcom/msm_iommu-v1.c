@@ -617,9 +617,9 @@ static struct msm_iommu_master *msm_iommu_find_master(struct device *dev)
 	}
 
 	if (found) {
-		dev_dbg(dev, "found master %s with ctx:%d\n",
+		dev_dbg(dev, "found master %s with HW ctx:%d\n",
 			dev_name(master->dev),
-			master->ctx_drvdata->ctx_num);
+			master->ctx_drvdata->num);
 		return master;
 	}
 

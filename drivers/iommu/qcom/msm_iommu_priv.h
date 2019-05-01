@@ -201,8 +201,6 @@ struct msm_iommu_drvdata {
  * @name		Human-readable name of this context device
  * @sids		List of Stream IDs mapped to this context
  * @nsid		Number of Stream IDs mapped to this context
- * @ctx_num		Context number of this context; should match the
-			second cell of the iommus node of associated device
  * @secure_context	true if this is a secure context programmed by
 			the secure environment, false otherwise
  * @asid		ASID used with this context.
@@ -220,7 +218,6 @@ struct msm_iommu_ctx_drvdata {
 	const char *name;
 	u32 sids[MAX_NUM_SMR];
 	unsigned int nsid;
-	unsigned int ctx_num;
 	bool secure_context;
 	int asid;
 	int attach_count;
