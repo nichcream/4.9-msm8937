@@ -88,6 +88,7 @@ struct device *msm_iommu_get_ctx(const char *ctx_name)
 {
 	struct msm_iommu_drvdata *drv;
 	struct device *dev = NULL;
+	struct iommu_group *group;
 	struct platform_device *pdev = NULL;
 	struct msm_iommu_master *master = NULL;
 	struct msm_iommu_drvdata *iommu_drvdata = NULL;
@@ -122,6 +123,15 @@ struct device *msm_iommu_get_ctx(const char *ctx_name)
 	msm_iommu_add_master(master);
 
 	dev->archdata.iommu = master;
+
+	group = generic_device_group(dev);
+	if (!group || iommu_group_add_device(group, dev)) {
+		pr_err("%s: failed to add %s to iommu group", __func__, dev_name(dev));
+		iommu_group_put(group);
+		return ERR_PTR(-ENODEV);
+	}
+
+	iommu_group_put(group);
 
 	return dev;
 }
