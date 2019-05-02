@@ -4004,10 +4004,9 @@ static int fastrpc_cb_legacy_probe(struct device *dev)
 	struct fastrpc_session_ctx *first_sess = NULL, *sess = NULL;
 	struct device *cb_dev;
 	const char *name;
+	unsigned int range[2] = {0x80000000, 0x78000000}, range_size = 0;
 	unsigned int *sids = NULL, sids_size = 0;
 	int err = 0, ret = 0, i;
-
-	unsigned int start = 0x80000000;
 
 	VERIFY(err, NULL != (name = of_get_property(dev->of_node,
 					 "label", NULL)));
@@ -4044,11 +4043,23 @@ static int fastrpc_cb_legacy_probe(struct device *dev)
 	if (ret)
 		goto bail;
 
+	if (of_get_property(dev->of_node, "qcom,virtual-addr-pool", &range_size)
+			!= NULL) {
+		VERIFY(err, range_size == sizeof(range));
+		if (err)
+			goto bail;
+		ret = of_property_read_u32_array(dev->of_node,
+						"qcom,virtual-addr-pool",
+						range, 2);
+		if (ret)
+			goto bail;
+	}
+
 	cb_dev = msm_iommu_get_ctx("adsp_shared");
 
 	VERIFY(err, !IS_ERR_OR_NULL(first_sess->smmu.mapping =
 				arm_iommu_create_mapping(msm_iommu_get_bus(cb_dev),
-						start, 0x78000000)));
+						range[0], range[1])));
 	if (err)
 		goto bail;
 
