@@ -1499,7 +1499,12 @@ static int msm_iommu_domain_get_attr(struct iommu_domain *domain,
 		*((u64 *)data) = ttbr0;
 		break;
 	case DOMAIN_ATTR_CONTEXTIDR:
+#ifdef QCOM_IOMMU_V1_USE_AARCH64
 		ctxidr = priv->procid;
+#else
+		ctxidr = (priv->asid & CB_CONTEXTIDR_ASID_MASK) |
+			(priv->procid << CB_CONTEXTIDR_PROCID_SHIFT);
+#endif
 
 		*((u32 *)data) = ctxidr;
 		break;
@@ -1579,7 +1584,11 @@ static struct iommu_ops msm_iommu_ops = {
 	.map_sg = msm_iommu_map_sg,
 	.iova_to_phys = msm_iommu_iova_to_phys,
 	.is_iova_coherent = msm_iommu_is_iova_coherent,
+#ifdef QCOM_IOMMU_V1_USE_AARCH64
 	.pgsize_bitmap = (SZ_4K | SZ_64K | SZ_2M | SZ_32M | SZ_1G),
+#else
+	.pgsize_bitmap = (SZ_4K | SZ_64K | SZ_1M | SZ_16M),
+#endif
 	.get_pgsize_bitmap = msm_iommu_get_pgsize_bitmap,
 	.domain_set_attr = msm_iommu_domain_set_attr,
 	.domain_get_attr = msm_iommu_domain_get_attr,
