@@ -67,6 +67,7 @@
 
 #define MMU_SEP (MMU_IAS - 1)
 
+static DEFINE_MUTEX(iommu_masters_lock);
 static LIST_HEAD(iommu_masters);
 
 static DEFINE_MUTEX(msm_iommu_lock);
@@ -601,7 +602,9 @@ static void __program_context(struct msm_iommu_drvdata *iommu_drvdata,
 }
 
 void msm_iommu_add_master(struct msm_iommu_master *master) {
+	mutex_lock(&iommu_masters_lock);
 	list_add_tail(&master->list, &iommu_masters);
+	mutex_unlock(&iommu_masters_lock);
 }
 
 static struct msm_iommu_master *msm_iommu_find_master(struct device *dev)
@@ -609,12 +612,14 @@ static struct msm_iommu_master *msm_iommu_find_master(struct device *dev)
 	struct msm_iommu_master *master;
 	bool found = false;
 
+	mutex_lock(&iommu_masters_lock);
 	list_for_each_entry(master, &iommu_masters, list) {
 		if (master && master->dev == dev) {
 			found = true;
 			break;
 		}
 	}
+	mutex_unlock(&iommu_masters_lock);
 
 	if (found) {
 		dev_dbg(dev, "found master %s with HW ctx:%d\n",
