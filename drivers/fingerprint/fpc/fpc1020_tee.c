@@ -462,7 +462,7 @@ static irqreturn_t fpc1020_irq_handler(int irq, void *handle)
 	}
 
 	sysfs_notify(&fpc1020->dev->kobj, NULL, dev_attr_irq.attr.name);
-	dev_info(fpc1020->dev, "%s %d\n", __func__, fpc1020->irq_gpio);
+	dev_info_ratelimited(fpc1020->dev, "%s %d\n", __func__, fpc1020->irq_gpio);
 	return IRQ_HANDLED;
 }
 
