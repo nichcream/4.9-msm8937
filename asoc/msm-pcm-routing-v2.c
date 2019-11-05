@@ -7325,6 +7325,10 @@ static const struct snd_kcontrol_new mmul2_mixer_controls[] = {
 	SOC_SINGLE_EXT("USB_AUDIO_TX", MSM_BACKEND_DAI_USB_TX,
 	MSM_FRONTEND_DAI_MULTIMEDIA2, 1, 0, msm_routing_get_audio_mixer,
 	msm_routing_put_audio_mixer),
+	SOC_DOUBLE_EXT("SEC_AUX_PCM_TX", SND_SOC_NOPM,
+	MSM_BACKEND_DAI_SEC_AUXPCM_TX,
+	MSM_FRONTEND_DAI_MULTIMEDIA2, 1, 0, msm_routing_get_audio_mixer,
+	msm_routing_put_audio_mixer),
 };
 
 static const struct snd_kcontrol_new mmul3_mixer_controls[] = {
@@ -12792,15 +12796,18 @@ static int msm_routing_put_lsm_app_type_cfg_control(
 					struct snd_ctl_elem_value *ucontrol)
 {
 	int i = 0, j;
-	int num_app_types = ucontrol->value.integer.value[i++];
+	int num_app_types;
 
-	memset(lsm_app_type_cfg, 0, MAX_APP_TYPES*
-				sizeof(struct msm_pcm_routing_app_type_data));
-	if (num_app_types > MAX_APP_TYPES) {
+	if (ucontrol->value.integer.value[0] > MAX_APP_TYPES) {
 		pr_err("%s: number of app types exceed the max supported\n",
 			__func__);
 		return -EINVAL;
 	}
+
+	num_app_types = ucontrol->value.integer.value[i++];
+	memset(lsm_app_type_cfg, 0, MAX_APP_TYPES*
+	       sizeof(struct msm_pcm_routing_app_type_data));
+
 	for (j = 0; j < num_app_types; j++) {
 		lsm_app_type_cfg[j].app_type =
 				ucontrol->value.integer.value[i++];
@@ -13447,28 +13454,28 @@ static const int const int4_mi2s_rx_vi_fb_tx_stereo_ch_value[] = {
 };
 
 static const struct soc_enum slim0_rx_vi_fb_lch_mux_enum =
-	SOC_VALUE_ENUM_DOUBLE(0, MSM_BACKEND_DAI_SLIMBUS_0_RX, 0, 0,
+	SOC_VALUE_ENUM_DOUBLE(SND_SOC_NOPM, MSM_BACKEND_DAI_SLIMBUS_0_RX, 0, 0,
 	ARRAY_SIZE(slim0_rx_vi_fb_tx_lch_mux_text),
 	slim0_rx_vi_fb_tx_lch_mux_text, slim0_rx_vi_fb_tx_lch_value);
 
 static const struct soc_enum slim0_rx_vi_fb_rch_mux_enum =
-	SOC_VALUE_ENUM_DOUBLE(0, MSM_BACKEND_DAI_SLIMBUS_0_RX, 0, 0,
+	SOC_VALUE_ENUM_DOUBLE(SND_SOC_NOPM, MSM_BACKEND_DAI_SLIMBUS_0_RX, 0, 0,
 	ARRAY_SIZE(slim0_rx_vi_fb_tx_rch_mux_text),
 	slim0_rx_vi_fb_tx_rch_mux_text, slim0_rx_vi_fb_tx_rch_value);
 
 static const struct soc_enum mi2s_rx_vi_fb_mux_enum =
-	SOC_VALUE_ENUM_DOUBLE(0, MSM_BACKEND_DAI_PRI_MI2S_RX, 0, 0,
+	SOC_VALUE_ENUM_DOUBLE(SND_SOC_NOPM, MSM_BACKEND_DAI_PRI_MI2S_RX, 0, 0,
 	ARRAY_SIZE(mi2s_rx_vi_fb_tx_mux_text),
 	mi2s_rx_vi_fb_tx_mux_text, mi2s_rx_vi_fb_tx_value);
 
 static const struct soc_enum int4_mi2s_rx_vi_fb_mono_ch_mux_enum =
-	SOC_VALUE_ENUM_DOUBLE(0, MSM_BACKEND_DAI_INT4_MI2S_RX, 0, 0,
+	SOC_VALUE_ENUM_DOUBLE(SND_SOC_NOPM, MSM_BACKEND_DAI_INT4_MI2S_RX, 0, 0,
 	ARRAY_SIZE(int4_mi2s_rx_vi_fb_tx_mono_mux_text),
 	int4_mi2s_rx_vi_fb_tx_mono_mux_text,
 	int4_mi2s_rx_vi_fb_tx_mono_ch_value);
 
 static const struct soc_enum int4_mi2s_rx_vi_fb_stereo_ch_mux_enum =
-	SOC_VALUE_ENUM_DOUBLE(0, MSM_BACKEND_DAI_INT4_MI2S_RX, 0, 0,
+	SOC_VALUE_ENUM_DOUBLE(SND_SOC_NOPM, MSM_BACKEND_DAI_INT4_MI2S_RX, 0, 0,
 	ARRAY_SIZE(int4_mi2s_rx_vi_fb_tx_stereo_mux_text),
 	int4_mi2s_rx_vi_fb_tx_stereo_mux_text,
 	int4_mi2s_rx_vi_fb_tx_stereo_ch_value);
@@ -15695,6 +15702,7 @@ static const struct snd_soc_dapm_route intercon[] = {
 	{"MultiMedia5 Mixer", "AUX_PCM_UL_TX", "AUX_PCM_TX"},
 	{"MultiMedia10 Mixer", "AUX_PCM_TX", "AUX_PCM_TX"},
 	{"MultiMedia1 Mixer", "SEC_AUX_PCM_UL_TX", "SEC_AUX_PCM_TX"},
+	{"MultiMedia2 Mixer", "SEC_AUX_PCM_TX", "SEC_AUX_PCM_TX"},
 	{"MultiMedia3 Mixer", "SEC_AUX_PCM_TX", "SEC_AUX_PCM_TX"},
 	{"MultiMedia5 Mixer", "SEC_AUX_PCM_TX", "SEC_AUX_PCM_TX"},
 	{"MultiMedia10 Mixer", "SEC_AUX_PCM_TX", "SEC_AUX_PCM_TX"},
